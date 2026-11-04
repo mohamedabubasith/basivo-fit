@@ -1,6 +1,6 @@
-import { Footprints, Flame, Droplets, BatteryMedium, MapPin, Wind, Thermometer, Scale, Activity, Zap, Moon } from 'lucide-react';
+import { Footprints, Flame, Dumbbell, Clock, HeartPulse, Droplets, BatteryMedium, MapPin, Wind, Thermometer, Scale, Activity, Zap, Moon } from 'lucide-react';
 import type { Health } from '../data/types';
-import { mainSleep } from '../data/health';
+import { isNap, mainSleep } from '../data/health';
 import { useCountUp } from '../lib/motion';
 import { hm, num0 } from '../lib/format';
 import { Bars, RangeChart, Ring, Sparkline } from './Charts';
@@ -62,8 +62,8 @@ export function StepsCard({ h }: { h: Health }) {
 export function SleepCard({ h, full = false }: { h: Health; full?: boolean }) {
   const night = mainSleep(h.sleep);
   if (!night) return <section className="card"><h2><Moon size={18} aria-hidden="true" /> Sleep</h2><p className="muted">No sleep recorded yet. Wear your tracker to bed to see your sleep stages.</p></section>;
-  const nights = h.sleep.filter(n => n.minutes >= 180);
-  const naps = h.sleep.filter(n => n.minutes < 180);
+  const nights = h.sleep.filter(n => !isNap(n));
+  const naps = h.sleep.filter(isNap);
   const avg = nights.length ? nights.reduce((a, n) => a + n.minutes, 0) / nights.length : 0;
   const stages = [
     { key: 'deep', label: 'Deep', v: night.deep }, { key: 'light', label: 'Light', v: night.light },
@@ -77,6 +77,7 @@ export function SleepCard({ h, full = false }: { h: Health; full?: boolean }) {
         <span className="muted small mono">{night.bedtime} to {night.wake}</span>
       </div>
       <p className="big-num sm">{hm(night.minutes)}</p>
+      {night.longestWake && night.longestWake.minutes >= 20 && <p className="sleep-wake small">Awake {night.longestWake.minutes} min around {night.longestWake.at}</p>}
       {nights.length > 1 && <p className="muted small">Average {hm(avg)} over {nights.length} nights</p>}
       <div className="stage-bar" role="img" aria-label={stages.map(s => `${s.label} ${s.v} minutes`).join(', ')}>
         {stages.map(s => <div key={s.key} className={`stage ${s.key}`} style={{ width: `${(s.v / total) * 100}%` }} />)}
@@ -152,3 +153,30 @@ export function AzmCard({ h }: { h: Health }) {
 }
 
 export { BeatingHeart };
+
+export function DayStats({ h }: { h: Health }) {
+  const a = h.activity, r = h.heart.todayRange;
+  return (
+    <section aria-labelledby="day-title">
+      <h2 id="day-title">Today at a glance</h2>
+      <div className="tiles">
+        <Tile icon={<Flame size={18} />} label="Calories burned" value={a.totalKcal !== null ? num0(a.totalKcal) : '--'} sub={`${num0(a.activeKcal)} from activity`} />
+        <Tile icon={<HeartPulse size={18} />} label="Heart rate" value={r ? `${r.min} to ${r.max}` : '--'} sub={r ? `bpm today, average ${r.avg}` : 'No readings yet'} />
+        <Tile icon={<Clock size={18} />} label="Hourly activity" value={`${a.hourly.done} of ${a.hourly.goal}`} sub="hours with 250+ steps, 9 AM to 6 PM" />
+        <Tile icon={<Dumbbell size={18} />} label="Exercise days" value={`${a.exerciseDays.done} of ${a.exerciseDays.goal}`} sub="this week" />
+      </div>
+    </section>
+  );
+}
+
+export function HourlyCard({ h }: { h: Health }) {
+  const hrs = h.activity.hourly.hours;
+  if (hrs.length < 2) return null;
+  return (
+    <section className="card" aria-labelledby="hourly-title">
+      <div className="row between"><h2 id="hourly-title"><Clock size={18} aria-hidden="true" /> Steps by hour</h2><span className="mono strong">{h.activity.hourly.done} of {h.activity.hourly.goal}</span></div>
+      <p className="muted small">Aim for 250 steps every hour from 9 AM to 6 PM.</p>
+      <Bars data={hrs.map(x => x.steps)} labels={hrs.map((x, i) => (i % 4 === 0 ? x.hour : ''))} goal={250} format={num0} height={120} />
+    </section>
+  );
+}

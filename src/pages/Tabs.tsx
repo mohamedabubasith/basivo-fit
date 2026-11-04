@@ -3,7 +3,7 @@ import { Sparkles, ChevronRight, HeartPulse, Info } from 'lucide-react';
 import { useHealth } from '../lib/store';
 import { tip } from '../data/health';
 import { Header, LiveBadge, RefreshButton, Skeleton } from '../components/ui';
-import { AzmCard, DeviceStrip, HeartCard, SleepCard, StepsCard, Vitals, WeekSteps } from '../components/sections';
+import { AzmCard, DayStats, DeviceStrip, HourlyCard, HeartCard, SleepCard, StepsCard, Vitals, WeekSteps } from '../components/sections';
 import { RangeChart, Sparkline } from '../components/Charts';
 
 function useData() {
@@ -34,6 +34,7 @@ export function Today() {
       <div className="card ai-note"><Sparkles size={18} aria-hidden="true" /><p>{tip(h)}</p></div>
       <Link to="/heart" className="link-card"><HeartCard h={h} /></Link>
       <StepsCard h={h} />
+      <DayStats h={h} />
       <Link to="/sleep" className="link-card"><SleepCard h={h} /></Link>
       <Vitals h={h} />
       {demo && <p className="muted tiny center">You are viewing demo data. Sign in with Google on the Profile tab to see your own.</p>}
@@ -93,6 +94,7 @@ export function ActivityTab() {
     <main className="page">
       <Header title="Activity" subtitle={<Sub />} right={!demo && <RefreshButton loading={loading} onClick={reload} />} />
       <StepsCard h={h} />
+      <HourlyCard h={h} />
       <WeekSteps h={h} />
       <AzmCard h={h} />
       {h.heart.hourly.length > 1 && (

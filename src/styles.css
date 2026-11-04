@@ -254,7 +254,7 @@ a.list-row:active { background: var(--card-2); }
 @keyframes grow { from { transform: scaleY(0); } }
 .bar.hit { background: var(--up); opacity: 0.85; }
 .bar.today { opacity: 1; }
-.bar-label { position: absolute; bottom: -22px; font-size: 12px; color: var(--muted-fg); }
+.bar-label { position: absolute; bottom: -22px; white-space: nowrap; font-size: 12px; color: var(--muted-fg); }
 .bars-goal { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--muted-fg); z-index: 1; pointer-events: none; }
 .bars-goal span { position: absolute; right: 0; top: -20px; font-size: 11px; font-family: var(--mono); color: var(--muted-fg); background: var(--card); padding: 0 4px; border-radius: 4px; }
 .ring { position: relative; flex-shrink: 0; }
@@ -432,3 +432,4 @@ a.list-row:active { background: var(--card-2); }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   .draw-line { stroke-dashoffset: 0; } .draw-fade { opacity: 1; }
 }
+.sleep-wake { align-self: flex-start; padding: 4px 10px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); font-weight: 500; }
