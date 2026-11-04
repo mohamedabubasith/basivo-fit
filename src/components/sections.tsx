@@ -35,7 +35,7 @@ export function HeartCard({ h, full = false }: { h: Health; full?: boolean }) {
       </>}
       <dl className="kv three">
         <div><dt>Resting</dt><dd className="mono">{lastRest ? `${lastRest.bpm} bpm` : '--'}</dd></div>
-        <div><dt>Highest today</dt><dd className="mono">{h.heart.hourly.length ? `${Math.max(...h.heart.hourly.map(p => p.max))} bpm` : '--'}</dd></div>
+        <div><dt>Highest today</dt><dd className="mono">{h.heart.todayRange ? `${h.heart.todayRange.max} bpm` : '--'}</dd></div>
         <div><dt>HRV</dt><dd className="mono">{lastHrv ? `${lastHrv.ms} ms` : '--'}</dd></div>
       </dl>
     </section>

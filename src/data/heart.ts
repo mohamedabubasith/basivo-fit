@@ -86,8 +86,9 @@ export async function fetchHeartDay(token: string, offset: number): Promise<Hear
   addZones(zoneSeconds, zonesR.rollupDataPoints?.[0]);
   return {
     start: start.getTime(), end: next.getTime(), points, limits: lim, zoneSeconds,
-    min: points.length ? Math.min(...points.map(p => p.min)) : null,
-    max: points.length ? Math.max(...points.map(p => p.max)) : null,
+    // Smoothed 5-minute averages, like the Google Health app.
+    min: points.length ? Math.round(Math.min(...points.map(p => p.avg))) : null,
+    max: points.length ? Math.round(Math.max(...points.map(p => p.avg))) : null,
     avg: points.length ? Math.round(points.reduce((a, p) => a + p.avg, 0) / points.length) : null
   };
 }

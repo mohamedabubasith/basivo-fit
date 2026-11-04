@@ -65,11 +65,12 @@ export async function fetchHealth(token: string): Promise<Health> {
     call(token, DT + 'total-calories/dataPoints:dailyRollUp', today),
     call(token, DT + 'heart-rate/dataPoints:dailyRollUp', today),
     call(token, DT + 'active-minutes/dataPoints:dailyRollUp', today),
-    call(token, DT + 'exercise/dataPoints?pageSize=50')
+    call(token, DT + 'exercise/dataPoints?pageSize=50'),
+    call(token, DT + 'heart-rate/dataPoints:rollUp', { range: { startTime: midnight.toISOString(), endTime: now.toISOString() }, windowSize: '300s' })
   ]);
   const failed = settled.find(s => s.status === 'rejected') as PromiseRejectedResult | undefined;
   if (failed && (failed.reason instanceof AuthExpiredError || failed.reason instanceof PermissionError)) throw failed.reason;
-  const [latestHr, hrHourly, stepsWeekR, distance, energy, azmR, resting, hrv, spo2R, respR, tempR, weightR, sleepR, stepsHourR, totalCalR, hrDayR, activeMinR, exerciseR] =
+  const [latestHr, hrHourly, stepsWeekR, distance, energy, azmR, resting, hrv, spo2R, respR, tempR, weightR, sleepR, stepsHourR, totalCalR, hrDayR, activeMinR, exerciseR, hr5R] =
     settled.map(s => (s.status === 'fulfilled' ? s.value : {})) as J[];
 
   const pts = (x: J) => (x.dataPoints || []) as J[];
@@ -128,6 +129,8 @@ export async function fetchHealth(token: string): Promise<Health> {
     .sort((a, b) => +a.d - +b.d);
   const dayHours = hourSteps.filter(h => h.d.getHours() >= 9 && h.d.getHours() < 18);
   const hrDay = roll(hrDayR)[0]?.heartRate;
+  // Like the Google Health app, the day's range uses smoothed 5-minute averages, not single raw beats.
+  const avg5 = roll(hr5R).map(p => Number(p.heartRate?.beatsPerMinuteAvg)).filter(v => v > 0);
   const totalKcalRaw = roll(totalCalR)[0]?.totalCalories?.kcalSum;
   const activeMinRaw = roll(activeMinR)[0]?.activeMinutes?.activeMinutesRollupByActivityLevel as J[] | undefined;
   const exDays = new Set(pts(exerciseR).map(p => p.exercise?.interval?.startTime).filter(Boolean)
@@ -148,7 +151,7 @@ export async function fetchHealth(token: string): Promise<Health> {
       now: lh ? { bpm: lh.bpm, time: time(new Date(lh.at).toISOString()), at: lh.at } : null,
       hourly,
       resting: pts(resting).filter(p => p.dailyRestingHeartRate?.date).map(p => ({ date: dayLabel(p.dailyRestingHeartRate.date), bpm: Number(p.dailyRestingHeartRate.beatsPerMinute) })).reverse(),
-      todayRange: hrDay?.beatsPerMinuteMin ? { min: Math.round(hrDay.beatsPerMinuteMin), max: Math.round(hrDay.beatsPerMinuteMax), avg: Math.round(hrDay.beatsPerMinuteAvg) } : null,
+      todayRange: avg5.length ? { min: Math.round(Math.min(...avg5)), max: Math.round(Math.max(...avg5)), avg: Math.round(hrDay?.beatsPerMinuteAvg ?? avg5.reduce((a, b) => a + b, 0) / avg5.length) } : null,
       hrv: pts(hrv).filter(p => p.dailyHeartRateVariability?.date).map(p => ({ date: dayLabel(p.dailyHeartRateVariability.date), ms: Math.round(p.dailyHeartRateVariability.averageHeartRateVariabilityMilliseconds * 10) / 10 })).reverse()
     },
     activity: {
