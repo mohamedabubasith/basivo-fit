@@ -1,3 +1,4 @@
+import '../extra.css';
 import { Footprints, Flame, Dumbbell, Clock, HeartPulse, Droplets, BatteryMedium, MapPin, Wind, Thermometer, Scale, Activity, Zap, Moon } from 'lucide-react';
 import type { Health } from '../data/types';
 import { isNap, mainSleep } from '../data/health';
