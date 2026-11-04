@@ -6,11 +6,9 @@
 - **Installable.** Add it to the home screen on Android or iPhone and it opens full screen like an app (PWA).
 - **Dark and light themes,** with smooth animations that respect "reduce motion".
 
-<p>
-  <img src="docs/screenshots/today-dark.png" width="200" alt="Today screen, dark theme">
-  <img src="docs/screenshots/heart.png" width="200" alt="Heart rate chart with zones">
-  <img src="docs/screenshots/sleep.png" width="200" alt="Sleep stages chart">
-  <img src="docs/screenshots/today-light.png" width="200" alt="Today screen, light theme">
+<p align="center">
+  <a href="docs/media/demo.mp4"><img src="docs/media/demo.gif" width="300" alt="Demo: Today, heart rate zones, sleep stages, activity and the dark to light theme switch"></a>
+  <br><sub>40-second tour with demo data. <a href="docs/media/demo.mp4">Watch the sharper MP4 version</a>.</sub>
 </p>
 
 > Not affiliated with Google or Fitbit. Not a medical device and not medical advice.
