@@ -5,6 +5,7 @@ import { tip } from '../data/health';
 import { Header, LiveBadge, RefreshButton, Skeleton } from '../components/ui';
 import { AzmCard, DayStats, DeviceStrip, HourlyCard, HeartCard, SleepCard, StepsCard, Vitals, WeekSteps } from '../components/sections';
 import { RangeChart, Sparkline } from '../components/Charts';
+import HeartDetail from '../components/HeartDetail';
 
 function useData() {
   const ctx = useHealth();
@@ -48,7 +49,8 @@ export function Heart() {
   return (
     <main className="page">
       <Header title="Heart" subtitle={<Sub />} right={!demo && <RefreshButton loading={loading} onClick={reload} />} />
-      <HeartCard h={h} full />
+      <HeartCard h={h} />
+      <HeartDetail />
       {h.heart.resting.length > 1 && (
         <section className="card"><div className="row between"><h2>Resting heart rate</h2><span className="mono">{h.heart.resting[h.heart.resting.length - 1].bpm} bpm</span></div>
           <Sparkline data={h.heart.resting.map(r => r.bpm)} up={false} height={60} />

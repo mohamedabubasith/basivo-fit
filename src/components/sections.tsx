@@ -8,6 +8,11 @@ import { Bars, RangeChart, Ring, Sparkline } from './Charts';
 import { BeatingHeart, EcgLine } from './Pulse';
 import { Tile } from './ui';
 
+function ago(at: number) {
+  const m = Math.round((Date.now() - at) / 60000);
+  return m <= 1 ? 'just now' : `${m} min ago`;
+}
+
 export function HeartCard({ h, full = false }: { h: Health; full?: boolean }) {
   const now = h.heart.now;
   const bpm = useCountUp(now?.bpm ?? 0, 900);
@@ -20,7 +25,7 @@ export function HeartCard({ h, full = false }: { h: Health; full?: boolean }) {
         <BeatingHeart bpm={now?.bpm ?? 0} size={40} />
         <div>
           <p className="big-num">{now ? Math.round(bpm) : '--'}<span className="unit"> bpm</span></p>
-          <p className="muted small">{now ? `Last reading at ${now.time}` : 'No reading yet'}</p>
+          <p className="muted small">{now ? <>Latest reading {now.time}{now.at ? <span className="live-age"> · {ago(now.at)}</span> : null}</> : 'No reading yet'}</p>
         </div>
       </div>
       <EcgLine bpm={now?.bpm ?? 60} />

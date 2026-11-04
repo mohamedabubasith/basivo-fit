@@ -1,4 +1,5 @@
 import { AuthExpiredError } from '../lib/auth';
+import { fetchLatestHr } from './heart';
 import type { Device, Health, SleepNight } from './types';
 
 const API = 'https://health.googleapis.com/v4/users/me/';
@@ -47,7 +48,7 @@ export async function fetchHealth(token: string): Promise<Health> {
   }));
 
   const settled = await Promise.allSettled([
-    call(token, DT + 'heart-rate/dataPoints?pageSize=1'),
+    fetchLatestHr(token),
     call(token, DT + 'heart-rate/dataPoints:rollUp', { range: { startTime: midnight.toISOString(), endTime: now.toISOString() }, windowSize: '3600s' }),
     call(token, DT + 'steps/dataPoints:dailyRollUp', { range: { start: civ(weekAgo), end: civ(tomorrow) }, windowSizeDays: 1 }),
     call(token, DT + 'distance/dataPoints:dailyRollUp', today),
@@ -74,7 +75,7 @@ export async function fetchHealth(token: string): Promise<Health> {
   const pts = (x: J) => (x.dataPoints || []) as J[];
   const roll = (x: J) => (x.rollupDataPoints || []) as J[];
 
-  const lh = pts(latestHr)[0]?.heartRate?.sampleTime ? pts(latestHr)[0].heartRate : undefined;
+  const lh = latestHr && (latestHr as J).bpm ? (latestHr as { bpm: number; at: number }) : undefined;
   const hourly = roll(hrHourly).slice().reverse()
     .map(p => ({ hour: hourLabel(p.startTime), avg: Math.round(p.heartRate?.beatsPerMinuteAvg || 0), min: Math.round(p.heartRate?.beatsPerMinuteMin || 0), max: Math.round(p.heartRate?.beatsPerMinuteMax || 0) }))
     .filter(h => h.avg > 0);
@@ -140,7 +141,7 @@ export async function fetchHealth(token: string): Promise<Health> {
     stepGoal: 8000,
     devices,
     heart: {
-      now: lh ? { bpm: Number(lh.beatsPerMinute), time: time(lh.sampleTime.physicalTime) } : null,
+      now: lh ? { bpm: lh.bpm, time: time(new Date(lh.at).toISOString()), at: lh.at } : null,
       hourly,
       resting: pts(resting).filter(p => p.dailyRestingHeartRate?.date).map(p => ({ date: dayLabel(p.dailyRestingHeartRate.date), bpm: Number(p.dailyRestingHeartRate.beatsPerMinute) })).reverse(),
       todayRange: hrDay?.beatsPerMinuteMin ? { min: Math.round(hrDay.beatsPerMinuteMin), max: Math.round(hrDay.beatsPerMinuteMax), avg: Math.round(hrDay.beatsPerMinuteAvg) } : null,

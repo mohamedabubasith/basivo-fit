@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthExpiredError, getSession, signOut, trySilentRenew, type Session } from './auth';
 import { fetchHealth, NoDeviceError, PermissionError } from '../data/health';
+import { fetchLatestHr } from '../data/heart';
 import { demoHealth } from '../data/demo';
 import type { Health } from '../data/types';
 
@@ -55,6 +56,21 @@ export function HealthProvider({ session, demo, onSignedOut, children }:
     document.addEventListener('visibilitychange', tick);
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', tick); };
   }, [reload, demo]);
+
+  // Live heart rate: check for a newer reading every 20 seconds while the app is open.
+  useEffect(() => {
+    if (demo) return;
+    const id = setInterval(async () => {
+      const s = getSession();
+      if (!s || document.visibilityState !== 'visible') return;
+      try {
+        const r = await fetchLatestHr(s.token);
+        if (r) setHealth(h => h && (!h.heart.now?.at || r.at >= h.heart.now.at)
+          ? { ...h, heart: { ...h.heart, now: { bpm: r.bpm, at: r.at, time: new Date(r.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) } } } : h);
+      } catch { /* next tick will retry */ }
+    }, 20_000);
+    return () => clearInterval(id);
+  }, [demo]);
 
   const leave = useCallback(async () => { await signOut(true); onSignedOut(); }, [onSignedOut]);
 

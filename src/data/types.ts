@@ -21,7 +21,7 @@ export interface Health {
   stepGoal: number;
   devices: Device[];
   heart: {
-    now: { bpm: number; time: string } | null;
+    now: { bpm: number; time: string; at?: number } | null;
     hourly: HeartHour[];
     resting: { date: string; bpm: number }[];
     hrv: { date: string; ms: number }[];
