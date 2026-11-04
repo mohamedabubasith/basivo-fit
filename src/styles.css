@@ -29,8 +29,6 @@
   --awake: #F59E0B;
   --shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 30px -12px rgba(0,0,0,0.6);
   --nav-bg: rgba(11, 18, 32, 0.78);
-  --hero-1: #1D3A8A;
-  --hero-2: #4C1D95;
   color-scheme: dark;
 }
 [data-theme='light'] {
@@ -63,8 +61,6 @@
   --awake: #D97706;
   --shadow: 0 1px 2px rgba(15,23,42,0.04), 0 12px 28px -14px rgba(15,23,42,0.18);
   --nav-bg: rgba(255, 255, 255, 0.82);
-  --hero-1: #2563EB;
-  --hero-2: #7C3AED;
   color-scheme: light;
 }
 :root {
@@ -144,22 +140,6 @@ section > h2 { margin-bottom: var(--space-2); }
   box-shadow: var(--shadow);
   transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
 }
-/* Portfolio hero with a slowly moving gradient */
-.hero {
-  position: relative; overflow: hidden; gap: var(--space-2); color: #FFFFFF; border: 0;
-  background: linear-gradient(120deg, var(--hero-1), var(--hero-2), var(--hero-1));
-  background-size: 220% 220%;
-  animation: rise var(--dur-slow) var(--ease) both, drift 14s ease-in-out infinite;
-}
-.hero::after {
-  content: ''; position: absolute; inset: -40% -20% auto auto; width: 70%; height: 140%;
-  background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 60%); pointer-events: none;
-}
-.hero .muted, .hero .kv dt { color: rgba(255,255,255,0.82); }
-.hero .kv { border-top-color: rgba(255,255,255,0.18); }
-.hero .change.up { color: #A7F3D0; } .hero .change.down { color: #FECACA; }
-.hero .demo-badge { background: rgba(255,255,255,0.16); color: #FFFFFF; }
-@keyframes drift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
 
 .muted { color: var(--muted-fg); }
 .small { font-size: 14px; }
@@ -253,25 +233,8 @@ a.list-row:active { background: var(--card-2); }
 .alert-icon.warn { background: var(--warn-bg); color: var(--warn); }
 .alert-icon.flat { background: var(--track); color: var(--muted-fg); }
 
-.stock-card:active, .connect-cta:active { transform: scale(0.985); border-color: var(--border-strong); }
+.connect-cta:active { transform: scale(0.985); border-color: var(--border-strong); }
 .spark { width: 100%; display: block; opacity: 0.9; }
-.legend { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-top: calc(-1 * var(--space-2)); }
-.legend b { font-family: var(--mono); color: var(--fg); margin-left: var(--space-2); }
-.legend-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--fg); display: inline-block; }
-
-/* ---------- Meter (L ● B T) ---------- */
-.meter { padding: var(--space-2) 0 0; }
-.meter-track { position: relative; height: 8px; background: var(--track); border-radius: 999px; }
-.meter-zone { position: absolute; top: 0; bottom: 0; }
-.meter-zone.loss { background: var(--down-bg); border-radius: 999px 0 0 999px; }
-.meter-zone.gain { background: var(--up-bg); border-radius: 0 999px 999px 0; }
-.meter-tick { position: absolute; top: -5px; width: 2px; height: 18px; background: var(--muted-fg); transform: translateX(-1px); border-radius: 1px; }
-.meter-tick.buy { background: var(--fg); }
-.meter-dot { position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%; transform: translate(-50%, -50%); border: 3px solid var(--card); box-shadow: 0 0 0 1px var(--border-strong); animation: slide-in 900ms var(--spring) both; }
-.meter-dot.up { background: var(--up); } .meter-dot.down { background: var(--down); }
-@keyframes slide-in { from { left: 50%; opacity: 0; } }
-.meter-labels { position: relative; height: 20px; margin-top: 6px; font-family: var(--mono); font-size: 12px; color: var(--muted-fg); }
-.meter-labels span { position: absolute; transform: translateX(-50%); }
 
 /* ---------- Charts ---------- */
 .chart { width: 100%; }
