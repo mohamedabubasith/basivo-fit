@@ -19,3 +19,26 @@
 .zone-track.big { height: 14px; }
 .hr-week-bar { animation: rise var(--dur-slow) var(--ease) both; }
 .live-age { font-size: 12px; color: var(--muted-fg); }
+:root, [data-theme='dark'] { --s-awake: #F0A3C0; --s-restless: #F5B942; --s-rem: #BAE6FD; --s-light: #93B4F8; --s-deep: #8B5CD6; }
+[data-theme='light'] { --s-awake: #E46A9A; --s-restless: #D99511; --s-rem: #38BDF8; --s-light: #5B83E8; --s-deep: #6D3FC0; }
+.hyp { width: 100%; margin-top: var(--space-2); }
+.hyp svg { display: block; overflow: visible; }
+.hyp-label { font-size: 13px; fill: var(--fg); font-weight: 500; }
+.hyp-val { fill: var(--muted-fg); font-weight: 400; }
+.hyp-track { fill: var(--track); }
+.hyp-join { stroke: var(--muted-fg); stroke-opacity: 0.35; stroke-width: 1; }
+.hyp-block { animation: fade-in 500ms var(--ease) both; }
+.hyp-x { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--space-2); margin-top: var(--space-3); font-size: 13px; }
+.hyp-x div { display: flex; flex-direction: column; }
+.hyp-x .right { align-items: flex-end; }
+.sq { display: flex; flex-direction: column; gap: var(--space-4); }
+.sq li { display: flex; flex-direction: column; gap: 8px; }
+.sq-tag { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.sq-tag.ok { background: var(--up-bg); color: var(--up); }
+.sq-tag.warn { background: var(--warn-bg); color: var(--warn); }
+.sq-tag.none { background: var(--track); color: var(--muted-fg); }
+.sq-track { position: relative; height: 14px; border-radius: 999px; background: var(--track); }
+.sq-band { position: absolute; top: -4px; bottom: -4px; border: 1.5px dashed var(--muted-fg); border-radius: 999px; opacity: 0.7; }
+.sq-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; transform-origin: left; animation: grow-x 900ms var(--ease) both; }
+.sq-fill.ok { background: var(--up); } .sq-fill.warn { background: var(--warn); } .sq-fill.none { background: transparent; }
+.sq-knob { position: absolute; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: #FFFFFF; border: 2px solid var(--card); box-shadow: 0 1px 4px rgba(0,0,0,0.4); }

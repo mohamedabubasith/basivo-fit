@@ -10,6 +10,10 @@ export interface SleepNight {
   nap?: boolean;
   longestWake?: { minutes: number; at: string } | null;
   toFallAsleep?: number | null;
+  start?: number;
+  end?: number;
+  stages?: { type: 'AWAKE' | 'LIGHT' | 'DEEP' | 'REM'; s: number; e: number }[];
+  restless?: { s: number; e: number }[];
 }
 
 export interface HeartHour { hour: string; avg: number; min: number; max: number }

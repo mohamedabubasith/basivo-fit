@@ -115,7 +115,11 @@ export async function fetchHealth(token: string): Promise<Health> {
       deep: Math.round(mins.DEEP), light: Math.round(mins.LIGHT), rem: Math.round(mins.REM), awake: Math.round(mins.AWAKE),
       bedtime: time(s.interval.startTime), wake: time(s.interval.endTime),
       nap: meta.nap === true || (meta.mainSleep === false && meta.nap !== false),
-      longestWake, toFallAsleep: fall != null ? Number(fall) : null
+      longestWake, toFallAsleep: fall != null ? Number(fall) : null,
+      start: start.getTime(), end: end.getTime(),
+      stages: stages.filter((st: J) => ['AWAKE', 'LIGHT', 'DEEP', 'REM'].includes(String(st.type).toUpperCase()))
+        .map((st: J) => ({ type: String(st.type).toUpperCase() as 'AWAKE' | 'LIGHT' | 'DEEP' | 'REM', s: +new Date(st.startTime), e: +new Date(st.endTime) })),
+      restless: ((s.shortAwakenings || []) as J[]).filter(a => a.startTime && a.endTime).map(a => ({ s: +new Date(a.startTime), e: +new Date(a.endTime) }))
     };
   }).reverse();
 

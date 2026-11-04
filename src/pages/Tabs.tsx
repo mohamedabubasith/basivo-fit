@@ -6,6 +6,7 @@ import { Header, LiveBadge, RefreshButton, Skeleton } from '../components/ui';
 import { AzmCard, DayStats, DeviceStrip, HourlyCard, HeartCard, SleepCard, StepsCard, Vitals, WeekSteps } from '../components/sections';
 import { RangeChart, Sparkline } from '../components/Charts';
 import HeartDetail from '../components/HeartDetail';
+import SleepDetail from '../components/SleepDetail';
 
 function useData() {
   const ctx = useHealth();
@@ -72,6 +73,7 @@ export function Sleep() {
   return (
     <main className="page">
       <Header title="Sleep" subtitle={<Sub />} right={!demo && <RefreshButton loading={loading} onClick={reload} />} />
+      <SleepDetail h={h} />
       <SleepCard h={h} full />
       <section className="card">
         <h2>About sleep stages</h2>

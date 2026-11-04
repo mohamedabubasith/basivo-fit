@@ -35,7 +35,20 @@ export const demoHealth: Health = {
   ].map(([minutes, deep, light, rem, awake, bedtime, wake], i) => ({
     date: day(6 - i), minutes: minutes as number, deep: deep as number, light: light as number,
     rem: rem as number, awake: awake as number, bedtime: bedtime as string, wake: wake as string,
-    longestWake: i === 6 ? { minutes: 54, at: '2:30 AM' } : null
+    longestWake: i === 6 ? { minutes: 54, at: '2:30 AM' } : null,
+    ...demoStages(6 - i)
   })),
   vitals: { spo2: { avg: 96.3, low: 95, high: 97.7 }, respRate: 14.4, skinTempC: 33.8, weightKg: 68 }
 };
+
+// A believable night: about 90-minute cycles of light, deep, light and REM sleep with a long wake-up in the middle.
+function demoStages(back: number) {
+  const start = new Date(); start.setDate(start.getDate() - back); start.setHours(1, 11, 0, 0);
+  const plan: [string, number][] = [['AWAKE', 2], ['LIGHT', 12], ['DEEP', 12], ['LIGHT', 10], ['REM', 8], ['LIGHT', 14], ['DEEP', 9], ['AWAKE', 4],
+    ['LIGHT', 20], ['REM', 12], ['AWAKE', 40], ['LIGHT', 30], ['DEEP', 12], ['LIGHT', 25], ['REM', 25], ['LIGHT', 30], ['DEEP', 16],
+    ['LIGHT', 28], ['REM', 22], ['AWAKE', 14], ['LIGHT', 45], ['REM', 20], ['LIGHT', 28]];
+  let t = start.getTime();
+  const stages = plan.map(([type, m]) => { const st = { type: type as 'AWAKE', s: t, e: t + m * 60000 }; t = st.e; return st; });
+  const restless = [18, 31, 52, 95, 99, 101, 160, 210, 275, 310, 420, 455, 459, 462].map(m => ({ s: start.getTime() + m * 60000, e: start.getTime() + (m + 1.5) * 60000 }));
+  return { start: start.getTime(), end: t, stages, restless };
+}
