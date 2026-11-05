@@ -78,6 +78,10 @@ class HealthStore extends ChangeNotifier with WidgetsBindingObserver {
       _enter(await auth.signIn());
     } on SignInCancelled {
       if (switching) _toLogin();
+    } on MissingPermission {
+      _toLogin(
+        'PulseFolio needs all the health permissions. Please sign in again and tick every box.',
+      );
     } catch (e) {
       _toLogin('Sign-in did not finish. Check your internet and try again.');
     }
@@ -114,7 +118,9 @@ class HealthStore extends ChangeNotifier with WidgetsBindingObserver {
       message = '';
     } on AuthExpiredError {
       await auth.signOut();
-      _toLogin('Your session has ended. Please sign in again.');
+      _toLogin(
+        'Your Google sign-in lasts about an hour. Tap Sign in with Google to continue.',
+      );
     } on NoDeviceError catch (e) {
       problem = Problem.noDevice;
       message = e.message;

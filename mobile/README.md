@@ -39,31 +39,26 @@ Every push to `main` builds the app on GitHub Actions:
 
 **iPhone:** installing needs a Mac with Xcode and an Apple Developer account. The project includes everything else; see "iPhone setup" below. Without those, use the web app, which installs from Safari with **Share → Add to Home Screen**.
 
-## Google sign-in setup (once)
+## Google sign-in
 
-Use the same Google Cloud project as the web app, with the Google Health API enabled and the 7 scopes added under **Data access**. Then:
+The app signs in through Google's own page in your phone's browser (a Custom Tab on Android, the system sign-in sheet on iPhone).
 
-### Android
-1. Go to **Google Auth Platform → Clients → Create client**.
-2. Fill it in:
-   - **Application type:** Android
-   - **Package name:** `in.basivo.fit`
-   - **SHA-1 certificate fingerprint:** `01:D5:24:D8:9B:E9:C4:B5:64:78:E3:9B:28:10:A0:0B:02:97:49:BD`
-3. Keep your **Web application** client too. The Android app uses its Client ID as the "server client ID". It is set in `lib/data/auth.dart`; change it with `--dart-define=GOOGLE_WEB_CLIENT_ID=...`.
-4. Make sure your Google account is listed under **Audience → Test users**.
+**It uses the same Web OAuth client as the web app, so there is nothing extra to set up in Google Cloud.**
 
-The SHA-1 belongs to `android/app/debug.keystore`. That is a public debug key (password `android`), so every build, including the GitHub Actions ones, has the same fingerprint. Before publishing on Google Play, sign with your own private key and register that key's SHA-1 too.
+1. The app opens Google sign-in with the web client ID and the web app's address as the return address. That address is already allowed on the client.
+2. Google returns to the web app. The web app sees that the sign-in came from the phone app and passes the result straight to the app through a `basivofit://` link. Nothing is stored on the web side.
+3. The app keeps the access token on the phone and sends it only to Google. Signing out revokes it.
 
-### iPhone setup
-1. Create an **iOS** client with bundle ID `in.basivo.basivoFit`, or the one you set in Xcode.
-2. Build with `--dart-define=GOOGLE_IOS_CLIENT_ID=<ios client id>`.
-3. In `ios/Runner/Info.plist`, add a `CFBundleURLTypes` entry whose URL scheme is the iOS client's **reversed** client ID (`com.googleusercontent.apps.…`).
+Notes:
+- Google access tokens from this flow last about an hour. After that the app asks you to tap **Sign in with Google** again; Google remembers your choice, so it is quick.
+- Your account must be in **Audience → Test users** while the Google app is in Testing.
+- To use your own web deployment, build with `--dart-define=GOOGLE_WEB_CLIENT_ID=...` and `--dart-define=OAUTH_REDIRECT=https://your-site/`.
 
 ## Develop
 
 ```bash
 flutter pub get
-flutter test          # 29 tests: API parsing, Bluetooth packets, live sensor flows, sleep rules, every screen at 3 sizes and 150% text, sign-in flows
+flutter test          # 32 tests: API parsing, Bluetooth packets, live sensor flows, sleep rules, every screen at 3 sizes and 150% text, sign-in flows
 flutter run           # on a phone or emulator
 ```
 

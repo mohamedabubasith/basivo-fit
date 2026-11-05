@@ -1,6 +1,11 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'dart:math';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'health_api.dart';
 
 class AppUser {
@@ -28,23 +33,33 @@ const healthScopes = [
 
 class SignInCancelled implements Exception {}
 
-/// Native Google Sign-In (Android Credential Manager / iOS GoogleSignIn SDK).
-/// The access token stays on the device and is only sent to Google.
-class GoogleAuthService implements AuthService {
-  // The web OAuth client ID acts as the "server client ID" that Android requires.
-  // Client IDs are public; never put a client secret in the app.
-  static const _serverClientId = String.fromEnvironment(
+class MissingPermission implements Exception {}
+
+/// Google sign-in in the phone's browser (Custom Tab on Android, ASWebAuthenticationSession on iPhone),
+/// using the same Web OAuth client as the web app, so no extra Google Cloud setup is needed.
+///
+/// Google returns to the web app's address (already allowed on the client); the web app sees the
+/// `app.` state and hands the result straight back to this app through the basivofit:// link.
+/// The access token stays on the phone and is only sent to Google.
+class BrowserOAuthService implements AuthService {
+  BrowserOAuthService({http.Client? client})
+    : _client = client ?? http.Client();
+  final http.Client _client;
+
+  static const clientId = String.fromEnvironment(
     'GOOGLE_WEB_CLIENT_ID',
     defaultValue:
         '269270971211-d1rkpnadf0ievfl94e534tq1tqgoucng.apps.googleusercontent.com',
   );
-  static const _iosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
+  static const redirectUri = String.fromEnvironment(
+    'OAUTH_REDIRECT',
+    defaultValue: 'https://pulsefolio-jade.vercel.app/',
+  );
+  static const callbackScheme = 'basivofit';
+  static const _key = 'pf.session';
 
-  final _g = GoogleSignIn.instance;
-  Future<void>? _init;
-  GoogleSignInAccount? _account;
   String? _token;
-  DateTime _tokenAt = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime _expires = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   bool get supported =>
@@ -52,36 +67,24 @@ class GoogleAuthService implements AuthService {
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS);
 
-  Future<void> _ready() => _init ??= _g.initialize(
-    serverClientId: defaultTargetPlatform == TargetPlatform.android
-        ? _serverClientId
-        : null,
-    clientId:
-        defaultTargetPlatform == TargetPlatform.iOS && _iosClientId.isNotEmpty
-        ? _iosClientId
-        : null,
-  );
-
-  AppUser _user(GoogleSignInAccount a) => AppUser(
-    email: a.email,
-    name: a.displayName ?? a.email,
-    photoUrl: a.photoUrl,
-  );
-
   @override
   Future<AppUser?> restore() async {
-    if (!supported) return null;
-    await _ready();
     try {
-      final a = await _g.attemptLightweightAuthentication();
-      if (a == null) return null;
-      final authz = await a.authorizationClient.authorizationForScopes(
-        healthScopes,
+      final raw = (await SharedPreferences.getInstance()).getString(_key);
+      if (raw == null) return null;
+      final j = jsonDecode(raw) as Map<String, dynamic>;
+      final exp = DateTime.fromMillisecondsSinceEpoch(j['exp'] as int);
+      if (exp.difference(DateTime.now()) < const Duration(minutes: 1)) {
+        return null;
+      }
+      _token = j['token'] as String;
+      _expires = exp;
+      final u = j['user'] as Map<String, dynamic>;
+      return AppUser(
+        email: u['email'] as String,
+        name: u['name'] as String,
+        photoUrl: u['photo'] as String?,
       );
-      if (authz == null) return null;
-      _account = a;
-      _setToken(authz.accessToken);
-      return _user(a);
     } catch (_) {
       return null;
     }
@@ -89,61 +92,112 @@ class GoogleAuthService implements AuthService {
 
   @override
   Future<AppUser> signIn() async {
-    await _ready();
+    final rnd = Random.secure();
+    final state =
+        'app.${List.generate(16, (_) => rnd.nextInt(256).toRadixString(16).padLeft(2, '0')).join()}';
+    final url = Uri.https('accounts.google.com', '/o/oauth2/v2/auth', {
+      'client_id': clientId,
+      'redirect_uri': redirectUri,
+      'response_type': 'token',
+      'scope': ['openid', 'email', 'profile', ...healthScopes].join(' '),
+      'include_granted_scopes': 'true',
+      'prompt': 'select_account',
+      'state': state,
+    }).toString();
+    final String result;
     try {
-      final a = await _g.authenticate(scopeHint: healthScopes);
-      final authz =
-          await a.authorizationClient.authorizationForScopes(healthScopes) ??
-          await a.authorizationClient.authorizeScopes(healthScopes);
-      _account = a;
-      _setToken(authz.accessToken);
-      return _user(a);
-    } on GoogleSignInException catch (e) {
-      if (e.code == GoogleSignInExceptionCode.canceled) throw SignInCancelled();
+      result = await FlutterWebAuth2.authenticate(
+        url: url,
+        callbackUrlScheme: callbackScheme,
+      );
+    } on PlatformException catch (e) {
+      if (e.code == 'CANCELED') throw SignInCancelled();
       rethrow;
     }
+    final p = parseCallback(result);
+    if (p['state'] != state) throw StateError('Sign-in could not be verified.');
+    if (p['error'] == 'access_denied') throw SignInCancelled();
+    final token = p['access_token'];
+    if (token == null || token.isEmpty) {
+      throw StateError(p['error'] ?? 'No token');
+    }
+    final granted = (p['scope'] ?? '').split(' ');
+    if (!healthScopes.every(granted.contains)) throw MissingPermission();
+    _token = token;
+    _expires = DateTime.now().add(
+      Duration(seconds: int.tryParse(p['expires_in'] ?? '') ?? 3600),
+    );
+    final user = await _userInfo(token);
+    try {
+      await (await SharedPreferences.getInstance()).setString(
+        _key,
+        jsonEncode({
+          'token': token,
+          'exp': _expires.millisecondsSinceEpoch,
+          'user': {
+            'email': user.email,
+            'name': user.name,
+            'photo': user.photoUrl,
+          },
+        }),
+      );
+    } catch (_) {}
+    return user;
   }
 
-  void _setToken(String t) {
-    _token = t;
-    _tokenAt = DateTime.now();
+  /// Reads `basivofit://auth#access_token=...&state=...` (fragment or query).
+  static Map<String, String> parseCallback(String url) {
+    final u = Uri.parse(url);
+    final raw = u.fragment.isNotEmpty ? u.fragment : u.query;
+    return Uri.splitQueryString(raw);
+  }
+
+  Future<AppUser> _userInfo(String token) async {
+    try {
+      final r = await _client.get(
+        Uri.parse('https://www.googleapis.com/oauth2/v3/userinfo'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (r.statusCode == 200) {
+        final u = jsonDecode(r.body) as Map<String, dynamic>;
+        final email = (u['email'] ?? '') as String;
+        return AppUser(
+          email: email,
+          name: (u['name'] ?? email) as String,
+          photoUrl: u['picture'] as String?,
+        );
+      }
+    } catch (_) {}
+    return const AppUser(email: '', name: 'Signed in');
   }
 
   @override
   Future<String> accessToken() async {
-    // Google access tokens last about an hour; renew silently a little before that.
     if (_token != null &&
-        DateTime.now().difference(_tokenAt) < const Duration(minutes: 50)) {
+        _expires.difference(DateTime.now()) > const Duration(minutes: 1)) {
       return _token!;
     }
-    await refreshToken();
-    return _token!;
+    throw const AuthExpiredError();
   }
 
+  // Browser tokens last about an hour and cannot be renewed silently; the user signs in again (one tap).
   @override
-  Future<void> refreshToken() async {
-    final a = _account;
-    if (a == null) throw const AuthExpiredError();
-    if (_token != null) {
-      await a.authorizationClient.clearAuthorizationToken(accessToken: _token!);
-    }
-    final authz = await a.authorizationClient.authorizationForScopes(
-      healthScopes,
-    );
-    if (authz == null) throw const AuthExpiredError();
-    _setToken(authz.accessToken);
-  }
+  Future<void> refreshToken() async => throw const AuthExpiredError();
 
   @override
   Future<void> signOut() async {
-    await _ready();
+    final t = _token;
     _token = null;
-    _account = null;
-    // disconnect() also removes the app's access to Google Health data.
     try {
-      await _g.disconnect();
-    } catch (_) {
-      await _g.signOut();
+      await (await SharedPreferences.getInstance()).remove(_key);
+    } catch (_) {}
+    if (t != null) {
+      try {
+        await _client.post(
+          Uri.parse('https://oauth2.googleapis.com/revoke'),
+          body: {'token': t},
+        );
+      } catch (_) {}
     }
   }
 }

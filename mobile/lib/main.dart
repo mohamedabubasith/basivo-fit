@@ -16,7 +16,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   final theme = ThemeController()..load();
-  final store = HealthStore(auth: GoogleAuthService());
+  final store = HealthStore(auth: BrowserOAuthService());
   // Web-only share links: ?demo=1 opens the demo, &tab=heart picks a tab, &theme=dark sets the theme.
   final q = kIsWeb ? Uri.base.queryParameters : const <String, String>{};
   store.start().then((_) {

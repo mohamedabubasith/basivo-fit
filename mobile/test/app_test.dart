@@ -304,7 +304,7 @@ void main() {
     await pumpApp(tester, store);
     await settle(tester);
     expect(
-      find.text('Your session has ended. Please sign in again.'),
+      find.textContaining('Google sign-in lasts about an hour'),
       findsOneWidget,
     );
     store.dispose();

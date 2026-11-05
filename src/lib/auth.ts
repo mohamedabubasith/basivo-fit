@@ -67,6 +67,12 @@ export async function handleRedirect(): Promise<RedirectResult> {
   const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
   const p = new URLSearchParams(hash);
   if (!p.has('access_token') && !p.has('error')) return { kind: 'none' };
+  // Sign-in started by the Basivo Fit phone app: hand the result straight back to the app
+  // (its browser window is listening for basivofit://) without keeping anything here.
+  if (/^app\.[0-9a-f]{32}$/.test(p.get('state') || '')) {
+    window.location.replace('basivofit://auth#' + hash);
+    return new Promise(() => { /* the app takes over */ });
+  }
   history.replaceState(null, '', window.location.pathname + window.location.search);
   const expected = ss.get(K.state);
   ss.del(K.state);
