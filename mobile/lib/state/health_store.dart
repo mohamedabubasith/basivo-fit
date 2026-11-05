@@ -6,12 +6,15 @@ import '../data/health_api.dart';
 import '../data/models.dart';
 
 enum Phase { loading, login, app }
+
 enum Problem { none, noDevice, permission, error }
 
 /// App-wide state: who is signed in, the latest health data, and what went wrong.
 class HealthStore extends ChangeNotifier with WidgetsBindingObserver {
-  HealthStore({required this.auth, HealthApi Function(Future<String> Function())? apiFactory})
-      : _apiFactory = apiFactory ?? ((t) => HealthApi(token: t));
+  HealthStore({
+    required this.auth,
+    HealthApi Function(Future<String> Function())? apiFactory,
+  }) : _apiFactory = apiFactory ?? ((t) => HealthApi(token: t));
 
   final AuthService auth;
   final HealthApi Function(Future<String> Function()) _apiFactory;
@@ -120,7 +123,8 @@ class HealthStore extends ChangeNotifier with WidgetsBindingObserver {
       message = e.message;
     } catch (_) {
       problem = Problem.error;
-      message = 'Could not load your health data. Check your internet and try again.';
+      message =
+          'Could not load your health data. Check your internet and try again.';
     } finally {
       _busy = false;
       loading = false;
@@ -182,7 +186,13 @@ class HealthStore extends ChangeNotifier with WidgetsBindingObserver {
 
 /// Makes the store available to every screen.
 class StoreScope extends InheritedNotifier<HealthStore> {
-  const StoreScope({super.key, required HealthStore store, required super.child}) : super(notifier: store);
-  static HealthStore of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<StoreScope>()!.notifier!;
-  static HealthStore read(BuildContext context) => context.getInheritedWidgetOfExactType<StoreScope>()!.notifier!;
+  const StoreScope({
+    super.key,
+    required HealthStore store,
+    required super.child,
+  }) : super(notifier: store);
+  static HealthStore of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<StoreScope>()!.notifier!;
+  static HealthStore read(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<StoreScope>()!.notifier!;
 }

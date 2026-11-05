@@ -9,14 +9,19 @@ import '../theme/tokens.dart';
 class ThemeReveal extends StatefulWidget {
   const ThemeReveal({super.key, required this.child});
   final Widget child;
-  static ThemeRevealState? of(BuildContext context) => context.findAncestorStateOfType<ThemeRevealState>();
+  static ThemeRevealState? of(BuildContext context) =>
+      context.findAncestorStateOfType<ThemeRevealState>();
   @override
   State<ThemeReveal> createState() => ThemeRevealState();
 }
 
-class ThemeRevealState extends State<ThemeReveal> with SingleTickerProviderStateMixin {
+class ThemeRevealState extends State<ThemeReveal>
+    with SingleTickerProviderStateMixin {
   final _key = GlobalKey();
-  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 560));
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 560),
+  );
   ui.Image? _old;
   Offset _origin = Offset.zero;
 
@@ -26,8 +31,11 @@ class ThemeRevealState extends State<ThemeReveal> with SingleTickerProviderState
       return;
     }
     try {
-      final boundary = _key.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      final img = await boundary.toImage(pixelRatio: MediaQuery.of(context).devicePixelRatio);
+      final boundary =
+          _key.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final img = await boundary.toImage(
+        pixelRatio: MediaQuery.of(context).devicePixelRatio,
+      );
       setState(() {
         _old = img;
         _origin = origin;
@@ -51,20 +59,26 @@ class ThemeRevealState extends State<ThemeReveal> with SingleTickerProviderState
 
   @override
   Widget build(BuildContext context) => Stack(
-        textDirection: TextDirection.ltr,
-        children: [
-          RepaintBoundary(key: _key, child: widget.child),
-          if (_old != null)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: AnimatedBuilder(
-                  animation: _c,
-                  builder: (_, _) => CustomPaint(painter: _HolePainter(_old!, _origin, Motion.ease.transform(_c.value))),
+    textDirection: TextDirection.ltr,
+    children: [
+      RepaintBoundary(key: _key, child: widget.child),
+      if (_old != null)
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedBuilder(
+              animation: _c,
+              builder: (_, _) => CustomPaint(
+                painter: _HolePainter(
+                  _old!,
+                  _origin,
+                  Motion.ease.transform(_c.value),
                 ),
               ),
             ),
-        ],
-      );
+          ),
+        ),
+    ],
+  );
 }
 
 class _HolePainter extends CustomPainter {
@@ -75,13 +89,22 @@ class _HolePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final r = math.sqrt(math.pow(math.max(origin.dx, size.width - origin.dx), 2) + math.pow(math.max(origin.dy, size.height - origin.dy), 2));
+    final r = math.sqrt(
+      math.pow(math.max(origin.dx, size.width - origin.dx), 2) +
+          math.pow(math.max(origin.dy, size.height - origin.dy), 2),
+    );
     final clip = Path()
       ..fillType = PathFillType.evenOdd
       ..addRect(Offset.zero & size)
       ..addOval(Rect.fromCircle(center: origin, radius: r * t));
     canvas.clipPath(clip);
-    paintImage(canvas: canvas, rect: Offset.zero & size, image: image, fit: BoxFit.fill, filterQuality: FilterQuality.medium);
+    paintImage(
+      canvas: canvas,
+      rect: Offset.zero & size,
+      image: image,
+      fit: BoxFit.fill,
+      filterQuality: FilterQuality.medium,
+    );
   }
 
   @override

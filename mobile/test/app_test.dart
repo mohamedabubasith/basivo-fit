@@ -1,5 +1,7 @@
 import 'package:basivo_fit/data/auth.dart';
 import 'package:basivo_fit/data/health_api.dart';
+import 'package:basivo_fit/data/heart_sensor.dart';
+import 'package:basivo_fit/state/live_heart.dart';
 import 'package:basivo_fit/data/models.dart';
 import 'package:basivo_fit/main.dart';
 import 'package:basivo_fit/state/health_store.dart';
@@ -38,24 +40,52 @@ class FakeAuth implements AuthService {
 }
 
 /// Google replies with nothing at all: an account with no tracker.
-HealthApi emptyApi(Future<String> Function() t) => HealthApi(token: t, client: MockClient((_) async => http.Response('{}', 200)));
+HealthApi emptyApi(Future<String> Function() t) => HealthApi(
+  token: t,
+  client: MockClient((_) async => http.Response('{}', 200)),
+);
 
-Future<void> pumpApp(WidgetTester tester, HealthStore store, {bool reduceMotion = true, Size size = const Size(390, 844), double textScale = 1}) async {
+Future<void> pumpApp(
+  WidgetTester tester,
+  HealthStore store, {
+  bool reduceMotion = true,
+  Size size = const Size(390, 844),
+  double textScale = 1,
+}) async {
   SharedPreferences.setMockInitialValues({});
   tester.view.physicalSize = size * 2;
   tester.view.devicePixelRatio = 2;
   addTearDown(tester.view.reset);
   final theme = ThemeController();
   await store.start();
-  await tester.pumpWidget(MediaQuery(
-    data: MediaQueryData(size: size, disableAnimations: reduceMotion, textScaler: TextScaler.linear(textScale)),
-    child: BasivoFitApp(store: store, theme: theme),
-  ));
+  await tester.pumpWidget(
+    MediaQuery(
+      data: MediaQueryData(
+        size: size,
+        disableAnimations: reduceMotion,
+        textScaler: TextScaler.linear(textScale),
+      ),
+      child: BasivoFitApp(
+        store: store,
+        theme: theme,
+        live: LiveHeart(
+          real: SimulatedHeartSensor(),
+          demo: SimulatedHeartSensor(
+            interval: const Duration(milliseconds: 200),
+          ),
+        ),
+      ),
+    ),
+  );
   await tester.pump(const Duration(milliseconds: 600));
 }
 
 Future<void> tapDemo(WidgetTester tester) async {
-  await tester.scrollUntilVisible(find.text('Try the demo'), 200, scrollable: find.byType(Scrollable).first);
+  await tester.scrollUntilVisible(
+    find.text('Try the demo'),
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
   await tester.pump(const Duration(milliseconds: 100));
   await tester.tap(find.text('Try the demo'));
 }
@@ -70,17 +100,28 @@ Future<void> loadFonts() async {
   Future<void> load(String family, List<String> files) async {
     final l = FontLoader(family);
     for (final f in files) {
-      l.addFont(Future.value(ByteData.sublistView(File('assets/fonts/$f').readAsBytesSync())));
+      l.addFont(
+        Future.value(
+          ByteData.sublistView(File('assets/fonts/$f').readAsBytesSync()),
+        ),
+      );
     }
     await l.load();
   }
-  await load('FiraSans', ['FiraSans-Regular.ttf', 'FiraSans-Medium.ttf', 'FiraSans-SemiBold.ttf']);
+
+  await load('FiraSans', [
+    'FiraSans-Regular.ttf',
+    'FiraSans-Medium.ttf',
+    'FiraSans-SemiBold.ttf',
+  ]);
   await load('FiraCode', ['FiraCode.ttf']);
 }
 
 void main() {
   setUpAll(loadFonts);
-  testWidgets('login screen offers Google sign-in and the demo', (tester) async {
+  testWidgets('login screen offers Google sign-in and the demo', (
+    tester,
+  ) async {
     await pumpApp(tester, HealthStore(auth: FakeAuth()));
     expect(find.text('PulseFolio'), findsOneWidget);
     expect(find.text('Sign in with Google'), findsOneWidget);
@@ -88,32 +129,56 @@ void main() {
   });
 
   for (final size in const [Size(390, 844), Size(320, 640), Size(820, 1180)]) {
-    testWidgets('demo: every tab renders without overflow at ${size.width.toInt()}px', (tester) async {
-      final store = HealthStore(auth: FakeAuth());
-      await pumpApp(tester, store, size: size);
-      await tapDemo(tester);
-      await settle(tester);
-      expect(find.text('Demo data'), findsOneWidget);
-      await tester.scrollUntilVisible(find.text('Body and vitals'), 300, scrollable: find.byType(Scrollable).first);
-      expect(tester.takeException(), isNull);
-
-      for (final (tab, expectText) in [('Heart tab', 'Time in heart-rate zones'), ('Sleep tab', 'Sleep quality'), ('Activity tab', 'Steps by hour'), ('Profile tab', 'Appearance')]) {
-        await tester.tap(find.bySemanticsLabel(tab));
+    testWidgets(
+      'demo: every tab renders without overflow at ${size.width.toInt()}px',
+      (tester) async {
+        final store = HealthStore(auth: FakeAuth());
+        await pumpApp(tester, store, size: size);
+        await tapDemo(tester);
         await settle(tester);
-        await tester.scrollUntilVisible(find.text(expectText), 300, scrollable: find.byType(Scrollable).first);
-        expect(find.text(expectText), findsWidgets, reason: tab);
-      }
-      expect(tester.takeException(), isNull);
-      store.dispose();
-    });
+        expect(find.text('Demo data'), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text('Body and vitals'),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(tester.takeException(), isNull);
+
+        for (final (tab, expectText) in [
+          ('Heart tab', 'Time in heart-rate zones'),
+          ('Sleep tab', 'Sleep quality'),
+          ('Activity tab', 'Steps by hour'),
+          ('Profile tab', 'Appearance'),
+        ]) {
+          await tester.tap(find.bySemanticsLabel(tab));
+          await settle(tester);
+          await tester.scrollUntilVisible(
+            find.text(expectText),
+            300,
+            scrollable: find.byType(Scrollable).first,
+          );
+          expect(find.text(expectText), findsWidgets, reason: tab);
+        }
+        expect(tester.takeException(), isNull);
+        store.dispose();
+      },
+    );
   }
 
-  testWidgets('large system text (150%) does not break any tab', (tester) async {
+  testWidgets('large system text (150%) does not break any tab', (
+    tester,
+  ) async {
     final store = HealthStore(auth: FakeAuth());
     await pumpApp(tester, store, textScale: 1.5);
     await tapDemo(tester);
     await settle(tester);
-    for (final tab in ['Heart tab', 'Sleep tab', 'Activity tab', 'Profile tab', 'Today tab']) {
+    for (final tab in [
+      'Heart tab',
+      'Sleep tab',
+      'Activity tab',
+      'Profile tab',
+      'Today tab',
+    ]) {
       await tester.tap(find.bySemanticsLabel(tab));
       await settle(tester);
       for (var i = 0; i < 8; i++) {
@@ -124,6 +189,43 @@ void main() {
     expect(tester.takeException(), isNull);
     store.dispose();
   });
+
+  testWidgets(
+    'demo: Bluetooth live heart rate finds a sensor and shows every beat',
+    (tester) async {
+      final store = HealthStore(auth: FakeAuth());
+      await pumpApp(tester, store);
+      await tapDemo(tester);
+      await settle(tester);
+      await tester.tap(find.bySemanticsLabel('Heart tab'));
+      await settle(tester);
+      await tester.scrollUntilVisible(
+        find.text('Find a sensor'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Find a sensor'));
+      await settle(tester);
+      expect(find.text('Demo chest strap'), findsOneWidget);
+      await tester.tap(find.text('Demo chest strap'));
+      await settle(tester);
+      await settle(tester);
+      expect(find.text('Disconnect'), findsOneWidget);
+      expect(find.textContaining('zone'), findsWidgets);
+      expect(find.text('Lowest'), findsOneWidget);
+      // Bring the button to the middle of the screen, clear of the tab bar.
+      await Scrollable.ensureVisible(
+        tester.element(find.text('Disconnect')),
+        alignment: 0.5,
+      );
+      await settle(tester);
+      await tester.tap(find.text('Disconnect'));
+      await settle(tester);
+      expect(find.text('Find a sensor'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      store.dispose();
+    },
+  );
 
   testWidgets('heart: week view and day navigation', (tester) async {
     final store = HealthStore(auth: FakeAuth());
@@ -142,51 +244,69 @@ void main() {
     store.dispose();
   });
 
-  testWidgets('animations run with motion on (no exceptions, theme reveal works)', (tester) async {
-    final store = HealthStore(auth: FakeAuth());
-    await pumpApp(tester, store, reduceMotion: false);
-    await tapDemo(tester);
-    for (var i = 0; i < 20; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    await tester.tap(find.byTooltip('Switch to dark mode').first);
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(find.byTooltip('Switch to light mode'), findsWidgets);
-    await tester.tap(find.byTooltip('Switch to light mode').first);
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(find.byTooltip('Switch to dark mode'), findsWidgets);
-    expect(tester.takeException(), isNull);
-    store.dispose();
-  });
+  testWidgets(
+    'animations run with motion on (no exceptions, theme reveal works)',
+    (tester) async {
+      final store = HealthStore(auth: FakeAuth());
+      await pumpApp(tester, store, reduceMotion: false);
+      await tapDemo(tester);
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.tap(find.byTooltip('Switch to dark mode').first);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.byTooltip('Switch to light mode'), findsWidgets);
+      await tester.tap(find.byTooltip('Switch to light mode').first);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.byTooltip('Switch to dark mode'), findsWidgets);
+      expect(tester.takeException(), isNull);
+      store.dispose();
+    },
+  );
 
-  testWidgets('signed-in account without a tracker sees "No device connected" and can switch', (tester) async {
-    final auth = FakeAuth(user: const AppUser(email: 'nofitbit@example.com', name: 'No Fitbit'));
-    final store = HealthStore(auth: auth, apiFactory: emptyApi);
-    await pumpApp(tester, store);
-    await settle(tester);
-    expect(find.text('No device connected'), findsOneWidget);
-    expect(find.textContaining('nofitbit@example.com'), findsOneWidget);
-    expect(find.text('Sign in with another account'), findsOneWidget);
-    await tester.ensureVisible(find.text('Sign out'));
-    await tester.tap(find.text('Sign out'));
-    await settle(tester);
-    expect(auth.signOuts, 1);
-    expect(find.text('Sign in with Google'), findsOneWidget);
-    store.dispose();
-  });
+  testWidgets(
+    'signed-in account without a tracker sees "No device connected" and can switch',
+    (tester) async {
+      final auth = FakeAuth(
+        user: const AppUser(email: 'nofitbit@example.com', name: 'No Fitbit'),
+      );
+      final store = HealthStore(auth: auth, apiFactory: emptyApi);
+      await pumpApp(tester, store);
+      await settle(tester);
+      expect(find.text('No device connected'), findsOneWidget);
+      expect(find.textContaining('nofitbit@example.com'), findsOneWidget);
+      expect(find.text('Sign in with another account'), findsOneWidget);
+      await tester.ensureVisible(find.text('Sign out'));
+      await tester.tap(find.text('Sign out'));
+      await settle(tester);
+      expect(auth.signOuts, 1);
+      expect(find.text('Sign in with Google'), findsOneWidget);
+      store.dispose();
+    },
+  );
 
-  testWidgets('expired sign-in returns to the login screen with a message', (tester) async {
+  testWidgets('expired sign-in returns to the login screen with a message', (
+    tester,
+  ) async {
     final store = HealthStore(
-      auth: FakeAuth(user: const AppUser(email: 'a@b.c', name: 'A')),
-      apiFactory: (t) => HealthApi(token: t, client: MockClient((_) async => http.Response('{}', 401))),
+      auth: FakeAuth(
+        user: const AppUser(email: 'a@b.c', name: 'A'),
+      ),
+      apiFactory: (t) => HealthApi(
+        token: t,
+        client: MockClient((_) async => http.Response('{}', 401)),
+      ),
     );
     await pumpApp(tester, store);
     await settle(tester);
-    expect(find.text('Your session has ended. Please sign in again.'), findsOneWidget);
+    expect(
+      find.text('Your session has ended. Please sign in again.'),
+      findsOneWidget,
+    );
     store.dispose();
   });
 

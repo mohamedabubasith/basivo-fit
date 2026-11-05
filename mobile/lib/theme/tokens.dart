@@ -40,8 +40,30 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.shadow,
   });
 
-  final Color bg, glow1, glow2, card, card2, muted, fg, mutedFg, border, borderStrong, track;
-  final Color primary, secondary, accent, link, up, upBg, down, downBg, warn, warnBg, heart, heartBg, navBg;
+  final Color bg,
+      glow1,
+      glow2,
+      card,
+      card2,
+      muted,
+      fg,
+      mutedFg,
+      border,
+      borderStrong,
+      track;
+  final Color primary,
+      secondary,
+      accent,
+      link,
+      up,
+      upBg,
+      down,
+      downBg,
+      warn,
+      warnBg,
+      heart,
+      heartBg,
+      navBg;
   final Color zLight, zModerate, zVigorous, zPeak;
   final Color sAwake, sRestless, sRem, sLight, sDeep;
   final List<BoxShadow> shadow;
@@ -80,7 +102,14 @@ class AppColors extends ThemeExtension<AppColors> {
     sRem: Color(0xFFBAE6FD),
     sLight: Color(0xFF93B4F8),
     sDeep: Color(0xFF8B5CD6),
-    shadow: [BoxShadow(color: Color(0x99000000), blurRadius: 30, offset: Offset(0, 10), spreadRadius: -12)],
+    shadow: [
+      BoxShadow(
+        color: Color(0x99000000),
+        blurRadius: 30,
+        offset: Offset(0, 10),
+        spreadRadius: -12,
+      ),
+    ],
   );
 
   static const light = AppColors(
@@ -117,7 +146,14 @@ class AppColors extends ThemeExtension<AppColors> {
     sRem: Color(0xFF38BDF8),
     sLight: Color(0xFF5B83E8),
     sDeep: Color(0xFF6D3FC0),
-    shadow: [BoxShadow(color: Color(0x2E0F172A), blurRadius: 28, offset: Offset(0, 12), spreadRadius: -14)],
+    shadow: [
+      BoxShadow(
+        color: Color(0x2E0F172A),
+        blurRadius: 28,
+        offset: Offset(0, 12),
+        spreadRadius: -14,
+      ),
+    ],
   );
 
   @override
@@ -128,16 +164,40 @@ class AppColors extends ThemeExtension<AppColors> {
     if (other is! AppColors) return this;
     Color l(Color a, Color b) => Color.lerp(a, b, t)!;
     return AppColors(
-      bg: l(bg, other.bg), glow1: l(glow1, other.glow1), glow2: l(glow2, other.glow2), card: l(card, other.card),
-      card2: l(card2, other.card2), muted: l(muted, other.muted), fg: l(fg, other.fg), mutedFg: l(mutedFg, other.mutedFg),
-      border: l(border, other.border), borderStrong: l(borderStrong, other.borderStrong), track: l(track, other.track),
-      primary: l(primary, other.primary), secondary: l(secondary, other.secondary), accent: l(accent, other.accent),
-      link: l(link, other.link), up: l(up, other.up), upBg: l(upBg, other.upBg), down: l(down, other.down),
-      downBg: l(downBg, other.downBg), warn: l(warn, other.warn), warnBg: l(warnBg, other.warnBg), heart: l(heart, other.heart),
-      heartBg: l(heartBg, other.heartBg), navBg: l(navBg, other.navBg), zLight: l(zLight, other.zLight),
-      zModerate: l(zModerate, other.zModerate), zVigorous: l(zVigorous, other.zVigorous), zPeak: l(zPeak, other.zPeak),
-      sAwake: l(sAwake, other.sAwake), sRestless: l(sRestless, other.sRestless), sRem: l(sRem, other.sRem),
-      sLight: l(sLight, other.sLight), sDeep: l(sDeep, other.sDeep), shadow: t < 0.5 ? shadow : other.shadow,
+      bg: l(bg, other.bg),
+      glow1: l(glow1, other.glow1),
+      glow2: l(glow2, other.glow2),
+      card: l(card, other.card),
+      card2: l(card2, other.card2),
+      muted: l(muted, other.muted),
+      fg: l(fg, other.fg),
+      mutedFg: l(mutedFg, other.mutedFg),
+      border: l(border, other.border),
+      borderStrong: l(borderStrong, other.borderStrong),
+      track: l(track, other.track),
+      primary: l(primary, other.primary),
+      secondary: l(secondary, other.secondary),
+      accent: l(accent, other.accent),
+      link: l(link, other.link),
+      up: l(up, other.up),
+      upBg: l(upBg, other.upBg),
+      down: l(down, other.down),
+      downBg: l(downBg, other.downBg),
+      warn: l(warn, other.warn),
+      warnBg: l(warnBg, other.warnBg),
+      heart: l(heart, other.heart),
+      heartBg: l(heartBg, other.heartBg),
+      navBg: l(navBg, other.navBg),
+      zLight: l(zLight, other.zLight),
+      zModerate: l(zModerate, other.zModerate),
+      zVigorous: l(zVigorous, other.zVigorous),
+      zPeak: l(zPeak, other.zPeak),
+      sAwake: l(sAwake, other.sAwake),
+      sRestless: l(sRestless, other.sRestless),
+      sRem: l(sRem, other.sRem),
+      sLight: l(sLight, other.sLight),
+      sDeep: l(sDeep, other.sDeep),
+      shadow: t < 0.5 ? shadow : other.shadow,
     );
   }
 }

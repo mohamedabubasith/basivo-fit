@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "`in`.basivo.basivo_fit"
+    namespace = "com.basivo.fit"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         // Must match the Android OAuth client registered in Google Cloud (see mobile/README.md).
-        applicationId = "`in`.basivo.fit"
+        applicationId = "in.basivo.fit"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

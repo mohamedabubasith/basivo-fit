@@ -39,7 +39,7 @@ The Google Health app talks to the band over Bluetooth. This app can only read w
 
 ## Android and iPhone app (Flutter)
 
-A native Flutter version with the same design and extra animations lives in [`mobile/`](mobile/README.md). GitHub Actions tests and builds it on every push, and you can download the APK from the [latest Android build](../../releases/tag/mobile-latest).
+A native Flutter version with the same design, extra animations and **live heart rate from Bluetooth sensors** lives in [`mobile/`](mobile/README.md). GitHub Actions tests and builds it on every push, and you can download the APK from the [latest Android build](../../releases/tag/mobile-latest).
 
 ## Tech
 

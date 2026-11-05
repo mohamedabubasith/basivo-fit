@@ -38,7 +38,13 @@ class SleepNight {
 }
 
 class Device {
-  const Device({required this.name, required this.type, this.battery, this.batteryStatus = '', this.lastSync});
+  const Device({
+    required this.name,
+    required this.type,
+    this.battery,
+    this.batteryStatus = '',
+    this.lastSync,
+  });
   final String name, type, batteryStatus;
   final int? battery;
   final DateTime? lastSync;
@@ -120,11 +126,30 @@ class Health {
   final double? respRate, skinTempC, weightKg;
 
   Health withNow(HeartNow n) => Health(
-        live: live, updatedAt: updatedAt, devices: devices, stepGoal: stepGoal, now: n, hourly: hourly, resting: resting,
-        hrv: hrv, todayRange: todayRange, stepsToday: stepsToday, stepsWeek: stepsWeek, distanceKm: distanceKm,
-        activeKcal: activeKcal, totalKcal: totalKcal, azm: azm, hourSteps: hourSteps, hourlyDone: hourlyDone,
-        exerciseDays: exerciseDays, sleep: sleep, spo2: spo2, respRate: respRate, skinTempC: skinTempC, weightKg: weightKg,
-      );
+    live: live,
+    updatedAt: updatedAt,
+    devices: devices,
+    stepGoal: stepGoal,
+    now: n,
+    hourly: hourly,
+    resting: resting,
+    hrv: hrv,
+    todayRange: todayRange,
+    stepsToday: stepsToday,
+    stepsWeek: stepsWeek,
+    distanceKm: distanceKm,
+    activeKcal: activeKcal,
+    totalKcal: totalKcal,
+    azm: azm,
+    hourSteps: hourSteps,
+    hourlyDone: hourlyDone,
+    exerciseDays: exerciseDays,
+    sleep: sleep,
+    spo2: spo2,
+    respRate: respRate,
+    skinTempC: skinTempC,
+    weightKg: weightKg,
+  );
 
   SleepNight? get mainSleep {
     for (final n in sleep.reversed) {
@@ -137,13 +162,24 @@ class Health {
 // ---------- Heart detail ----------
 enum Zone { light, moderate, vigorous, peak }
 
-const zoneLabel = {Zone.light: 'Light', Zone.moderate: 'Moderate', Zone.vigorous: 'Vigorous', Zone.peak: 'Peak'};
+const zoneLabel = {
+  Zone.light: 'Light',
+  Zone.moderate: 'Moderate',
+  Zone.vigorous: 'Vigorous',
+  Zone.peak: 'Peak',
+};
 
 class ZoneLimits {
   const ZoneLimits(this.moderate, this.vigorous, this.peak);
   final int moderate, vigorous, peak;
   static const fallback = ZoneLimits(116, 142, 174);
-  Zone zoneOf(num bpm) => bpm >= peak ? Zone.peak : bpm >= vigorous ? Zone.vigorous : bpm >= moderate ? Zone.moderate : Zone.light;
+  Zone zoneOf(num bpm) => bpm >= peak
+      ? Zone.peak
+      : bpm >= vigorous
+      ? Zone.vigorous
+      : bpm >= moderate
+      ? Zone.moderate
+      : Zone.light;
 }
 
 class HrPoint {
@@ -153,14 +189,24 @@ class HrPoint {
 }
 
 class HeartDay {
-  const HeartDay({required this.start, required this.end, required this.points, required this.limits, required this.zoneSeconds});
+  const HeartDay({
+    required this.start,
+    required this.end,
+    required this.points,
+    required this.limits,
+    required this.zoneSeconds,
+  });
   final DateTime start, end;
   final List<HrPoint> points;
   final ZoneLimits limits;
   final Map<Zone, double> zoneSeconds;
   // Smoothed 5-minute averages, like the Google Health app.
-  int? get min => points.isEmpty ? null : points.map((p) => p.avg).reduce((a, b) => a < b ? a : b).round();
-  int? get max => points.isEmpty ? null : points.map((p) => p.avg).reduce((a, b) => a > b ? a : b).round();
+  int? get min => points.isEmpty
+      ? null
+      : points.map((p) => p.avg).reduce((a, b) => a < b ? a : b).round();
+  int? get max => points.isEmpty
+      ? null
+      : points.map((p) => p.avg).reduce((a, b) => a > b ? a : b).round();
 }
 
 class HeartWeekDay {
@@ -170,7 +216,11 @@ class HeartWeekDay {
 }
 
 class HeartWeek {
-  const HeartWeek({required this.days, required this.limits, required this.zoneSeconds});
+  const HeartWeek({
+    required this.days,
+    required this.limits,
+    required this.zoneSeconds,
+  });
   final List<HeartWeekDay> days;
   final ZoneLimits limits;
   final Map<Zone, double> zoneSeconds;

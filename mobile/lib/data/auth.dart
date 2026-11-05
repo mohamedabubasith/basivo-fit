@@ -33,8 +33,11 @@ class SignInCancelled implements Exception {}
 class GoogleAuthService implements AuthService {
   // The web OAuth client ID acts as the "server client ID" that Android requires.
   // Client IDs are public; never put a client secret in the app.
-  static const _serverClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID',
-      defaultValue: '269270971211-d1rkpnadf0ievfl94e534tq1tqgoucng.apps.googleusercontent.com');
+  static const _serverClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue:
+        '269270971211-d1rkpnadf0ievfl94e534tq1tqgoucng.apps.googleusercontent.com',
+  );
   static const _iosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
 
   final _g = GoogleSignIn.instance;
@@ -44,14 +47,26 @@ class GoogleAuthService implements AuthService {
   DateTime _tokenAt = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
-  bool get supported => !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+  bool get supported =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
 
   Future<void> _ready() => _init ??= _g.initialize(
-        serverClientId: defaultTargetPlatform == TargetPlatform.android ? _serverClientId : null,
-        clientId: defaultTargetPlatform == TargetPlatform.iOS && _iosClientId.isNotEmpty ? _iosClientId : null,
-      );
+    serverClientId: defaultTargetPlatform == TargetPlatform.android
+        ? _serverClientId
+        : null,
+    clientId:
+        defaultTargetPlatform == TargetPlatform.iOS && _iosClientId.isNotEmpty
+        ? _iosClientId
+        : null,
+  );
 
-  AppUser _user(GoogleSignInAccount a) => AppUser(email: a.email, name: a.displayName ?? a.email, photoUrl: a.photoUrl);
+  AppUser _user(GoogleSignInAccount a) => AppUser(
+    email: a.email,
+    name: a.displayName ?? a.email,
+    photoUrl: a.photoUrl,
+  );
 
   @override
   Future<AppUser?> restore() async {
@@ -60,7 +75,9 @@ class GoogleAuthService implements AuthService {
     try {
       final a = await _g.attemptLightweightAuthentication();
       if (a == null) return null;
-      final authz = await a.authorizationClient.authorizationForScopes(healthScopes);
+      final authz = await a.authorizationClient.authorizationForScopes(
+        healthScopes,
+      );
       if (authz == null) return null;
       _account = a;
       _setToken(authz.accessToken);
@@ -75,7 +92,8 @@ class GoogleAuthService implements AuthService {
     await _ready();
     try {
       final a = await _g.authenticate(scopeHint: healthScopes);
-      final authz = await a.authorizationClient.authorizationForScopes(healthScopes) ??
+      final authz =
+          await a.authorizationClient.authorizationForScopes(healthScopes) ??
           await a.authorizationClient.authorizeScopes(healthScopes);
       _account = a;
       _setToken(authz.accessToken);
@@ -94,7 +112,10 @@ class GoogleAuthService implements AuthService {
   @override
   Future<String> accessToken() async {
     // Google access tokens last about an hour; renew silently a little before that.
-    if (_token != null && DateTime.now().difference(_tokenAt) < const Duration(minutes: 50)) return _token!;
+    if (_token != null &&
+        DateTime.now().difference(_tokenAt) < const Duration(minutes: 50)) {
+      return _token!;
+    }
     await refreshToken();
     return _token!;
   }
@@ -103,8 +124,12 @@ class GoogleAuthService implements AuthService {
   Future<void> refreshToken() async {
     final a = _account;
     if (a == null) throw const AuthExpiredError();
-    if (_token != null) await a.authorizationClient.clearAuthorizationToken(accessToken: _token!);
-    final authz = await a.authorizationClient.authorizationForScopes(healthScopes);
+    if (_token != null) {
+      await a.authorizationClient.clearAuthorizationToken(accessToken: _token!);
+    }
+    final authz = await a.authorizationClient.authorizationForScopes(
+      healthScopes,
+    );
     if (authz == null) throw const AuthExpiredError();
     _setToken(authz.accessToken);
   }

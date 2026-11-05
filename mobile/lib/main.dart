@@ -2,7 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'data/auth.dart';
+import 'data/heart_sensor.dart';
 import 'state/health_store.dart';
+import 'state/live_heart.dart';
 import 'state/settings.dart';
 import 'theme/app_theme.dart';
 import 'theme/tokens.dart';
@@ -20,15 +22,61 @@ void main() {
   store.start().then((_) {
     if (q['demo'] == '1') store.startDemo();
   });
-  if (q['theme'] == 'dark' || q['theme'] == 'light') theme.set(q['theme'] == 'dark' ? ThemeMode.dark : ThemeMode.light);
-  initialTab = const ['today', 'heart', 'sleep', 'activity', 'profile'].indexOf(q['tab'] ?? 'today').clamp(0, 4);
-  runApp(BasivoFitApp(store: store, theme: theme));
+  if (q['theme'] == 'dark' || q['theme'] == 'light') {
+    theme.set(q['theme'] == 'dark' ? ThemeMode.dark : ThemeMode.light);
+  }
+  initialTab = const [
+    'today',
+    'heart',
+    'sleep',
+    'activity',
+    'profile',
+  ].indexOf(q['tab'] ?? 'today').clamp(0, 4);
+  final live = LiveHeart(real: BleHeartSensor());
+  runApp(BasivoFitApp(store: store, theme: theme, live: live));
 }
 
-class BasivoFitApp extends StatelessWidget {
-  const BasivoFitApp({super.key, required this.store, required this.theme});
+class BasivoFitApp extends StatefulWidget {
+  const BasivoFitApp({
+    super.key,
+    required this.store,
+    required this.theme,
+    required this.live,
+  });
   final HealthStore store;
   final ThemeController theme;
+  final LiveHeart live;
+  @override
+  State<BasivoFitApp> createState() => _BasivoFitAppState();
+}
+
+class _BasivoFitAppState extends State<BasivoFitApp> {
+  HealthStore get store => widget.store;
+  ThemeController get theme => widget.theme;
+  Phase? _lastPhase;
+
+  @override
+  void initState() {
+    super.initState();
+    store.addListener(_sync);
+    _sync();
+  }
+
+  // Demo mode uses the simulated sensor; signing in reconnects the last real sensor; signing out stops it.
+  void _sync() {
+    widget.live.setDemo(store.demo);
+    if (store.phase != _lastPhase) {
+      if (store.phase == Phase.app && !store.demo) widget.live.reconnectLast();
+      if (store.phase == Phase.login) widget.live.stop();
+      _lastPhase = store.phase;
+    }
+  }
+
+  @override
+  void dispose() {
+    store.removeListener(_sync);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,8 +93,18 @@ class BasivoFitApp extends StatelessWidget {
           builder: (context, child) {
             final dark = Theme.of(context).brightness == Brightness.dark;
             return AnnotatedRegion<SystemUiOverlayStyle>(
-              value: (dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark).copyWith(statusBarColor: Colors.transparent, systemNavigationBarColor: Colors.transparent),
-              child: StoreScope(store: store, child: child!),
+              value:
+                  (dark
+                          ? SystemUiOverlayStyle.light
+                          : SystemUiOverlayStyle.dark)
+                      .copyWith(
+                        statusBarColor: Colors.transparent,
+                        systemNavigationBarColor: Colors.transparent,
+                      ),
+              child: StoreScope(
+                store: store,
+                child: LiveScope(live: widget.live, child: child!),
+              ),
             );
           },
           home: _Root(theme: theme),
@@ -68,9 +126,17 @@ class _Root extends StatelessWidget {
       Phase.app => Shell(theme: theme),
     };
     return AnimatedSwitcher(
-      duration: context.reduceMotion ? Duration.zero : const Duration(milliseconds: 380),
+      duration: context.reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 380),
       switchInCurve: Motion.ease,
-      transitionBuilder: (c, a) => FadeTransition(opacity: a, child: ScaleTransition(scale: Tween(begin: 0.98, end: 1.0).animate(a), child: c)),
+      transitionBuilder: (c, a) => FadeTransition(
+        opacity: a,
+        child: ScaleTransition(
+          scale: Tween(begin: 0.98, end: 1.0).animate(a),
+          child: c,
+        ),
+      ),
       child: KeyedSubtree(key: ValueKey('${s.phase}-${s.demo}'), child: child),
     );
   }
@@ -83,7 +149,10 @@ class _Splash extends StatefulWidget {
 }
 
 class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))..repeat();
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..repeat();
   @override
   void dispose() {
     _c.dispose();
@@ -92,20 +161,20 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: context.c.bg,
-        body: Center(
-          child: Semantics(
-            label: 'Loading PulseFolio',
-            child: ScaleTransition(
-              scale: TweenSequence<double>([
-                TweenSequenceItem(tween: Tween(begin: 1, end: 1.12), weight: 20),
-                TweenSequenceItem(tween: Tween(begin: 1.12, end: 0.97), weight: 20),
-                TweenSequenceItem(tween: Tween(begin: 0.97, end: 1), weight: 20),
-                TweenSequenceItem(tween: ConstantTween(1), weight: 40),
-              ]).animate(_c),
-              child: const AppLogo(size: 72),
-            ),
-          ),
+    backgroundColor: context.c.bg,
+    body: Center(
+      child: Semantics(
+        label: 'Loading PulseFolio',
+        child: ScaleTransition(
+          scale: TweenSequence<double>([
+            TweenSequenceItem(tween: Tween(begin: 1, end: 1.12), weight: 20),
+            TweenSequenceItem(tween: Tween(begin: 1.12, end: 0.97), weight: 20),
+            TweenSequenceItem(tween: Tween(begin: 0.97, end: 1), weight: 20),
+            TweenSequenceItem(tween: ConstantTween(1), weight: 40),
+          ]).animate(_c),
+          child: const AppLogo(size: 72),
         ),
-      );
+      ),
+    ),
+  );
 }

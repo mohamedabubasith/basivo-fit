@@ -14,11 +14,14 @@ dependencies:
   shared_preferences: 2.5.6
   lucide_icons_flutter: 4.0.1
   url_launcher: 6.3.3
+  flutter_reactive_ble: 5.6.0
+  permission_handler: 13.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: 6.0.0
+  fake_async: 
 
 flutter:
   uses-material-design: true

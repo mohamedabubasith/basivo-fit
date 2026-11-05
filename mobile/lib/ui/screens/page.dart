@@ -17,15 +17,33 @@ class TabPage extends StatelessWidget {
     final pad = MediaQuery.paddingOf(context);
     final wide = MediaQuery.sizeOf(context).width > 640;
     final list = ListView.separated(
-      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-      padding: EdgeInsets.fromLTRB(wide ? 32 : Space.s4, pad.top + Space.s4, wide ? 32 : Space.s4, pad.bottom + 96),
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        wide ? 32 : Space.s4,
+        pad.top + Space.s4,
+        wide ? 32 : Space.s4,
+        pad.bottom + 96,
+      ),
       itemCount: children.length,
       separatorBuilder: (_, _) => const SizedBox(height: Space.s4),
       itemBuilder: (_, i) => Entrance(index: i, child: children[i]),
     );
-    final body = Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 560), child: list));
+    final body = Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: list,
+      ),
+    );
     if (onRefresh == null) return body;
-    return RefreshIndicator(onRefresh: onRefresh!, color: context.c.secondary, backgroundColor: context.c.card, edgeOffset: pad.top, child: body);
+    return RefreshIndicator(
+      onRefresh: onRefresh!,
+      color: context.c.secondary,
+      backgroundColor: context.c.card,
+      edgeOffset: pad.top,
+      child: body,
+    );
   }
 }
 
@@ -41,8 +59,21 @@ class TabHeader extends StatelessWidget {
     return PageHeader(
       title: title,
       theme: theme,
-      subtitle: h == null ? null : LiveBadge(live: !s.demo, text: s.demo ? null : 'updated ${_t(h.updatedAt)}'),
-      actions: [if (!s.demo) IconBtn(icon: LucideIcons.refreshCw, label: 'Refresh', spinning: s.loading, onTap: s.reload)],
+      subtitle: h == null
+          ? null
+          : LiveBadge(
+              live: !s.demo,
+              text: s.demo ? null : 'updated ${_t(h.updatedAt)}',
+            ),
+      actions: [
+        if (!s.demo)
+          IconBtn(
+            icon: LucideIcons.refreshCw,
+            label: 'Refresh',
+            spinning: s.loading,
+            onTap: s.reload,
+          ),
+      ],
     );
   }
 }

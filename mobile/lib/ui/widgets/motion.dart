@@ -4,7 +4,12 @@ import '../../theme/tokens.dart';
 
 /// Staggered entrance: fade, rise and a gentle spring settle. Skipped with reduce-motion.
 class Entrance extends StatefulWidget {
-  const Entrance({super.key, required this.index, required this.child, this.offset = 18});
+  const Entrance({
+    super.key,
+    required this.index,
+    required this.child,
+    this.offset = 18,
+  });
   final int index;
   final double offset;
   final Widget child;
@@ -12,8 +17,12 @@ class Entrance extends StatefulWidget {
   State<Entrance> createState() => _EntranceState();
 }
 
-class _EntranceState extends State<Entrance> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 520));
+class _EntranceState extends State<Entrance>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 520),
+  );
   Timer? _delay;
 
   @override
@@ -54,7 +63,12 @@ class _EntranceState extends State<Entrance> with SingleTickerProviderStateMixin
 
 /// Counts up from the previous value with an ease-out curve.
 class CountUp extends StatelessWidget {
-  const CountUp({super.key, required this.value, required this.builder, this.duration = const Duration(milliseconds: 900)});
+  const CountUp({
+    super.key,
+    required this.value,
+    required this.builder,
+    this.duration = const Duration(milliseconds: 900),
+  });
   final double value;
   final Duration duration;
   final Widget Function(BuildContext, double) builder;
@@ -72,7 +86,13 @@ class CountUp extends StatelessWidget {
 
 /// Tap feedback that scales the child slightly without moving the layout around it.
 class Pressable extends StatefulWidget {
-  const Pressable({super.key, required this.child, this.onTap, this.semanticLabel, this.borderRadius = Radii.card});
+  const Pressable({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.semanticLabel,
+    this.borderRadius = Radii.card,
+  });
   final Widget child;
   final VoidCallback? onTap;
   final String? semanticLabel;
@@ -114,8 +134,12 @@ class Skeleton extends StatefulWidget {
   State<Skeleton> createState() => _SkeletonState();
 }
 
-class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))..repeat();
+class _SkeletonState extends State<Skeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  )..repeat();
   @override
   void dispose() {
     _c.dispose();

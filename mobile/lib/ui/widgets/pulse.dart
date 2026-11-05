@@ -11,14 +11,35 @@ class BeatingHeart extends StatefulWidget {
   State<BeatingHeart> createState() => _BeatingHeartState();
 }
 
-class _BeatingHeartState extends State<BeatingHeart> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: _period);
-  Duration get _period => Duration(milliseconds: (60000 / (widget.bpm > 0 ? widget.bpm : 60)).round().clamp(300, 2000));
+class _BeatingHeartState extends State<BeatingHeart>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: _period,
+  );
+  Duration get _period => Duration(
+    milliseconds: (60000 / (widget.bpm > 0 ? widget.bpm : 60)).round().clamp(
+      300,
+      2000,
+    ),
+  );
   static final _beat = TweenSequence<double>([
-    TweenSequenceItem(tween: Tween<double>(begin: 1, end: 1.22).chain(CurveTween(curve: Curves.easeOut)), weight: 15),
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 1,
+        end: 1.22,
+      ).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 15,
+    ),
     TweenSequenceItem(tween: Tween<double>(begin: 1.22, end: 0.96), weight: 15),
     TweenSequenceItem(tween: Tween<double>(begin: 0.96, end: 1.12), weight: 15),
-    TweenSequenceItem(tween: Tween<double>(begin: 1.12, end: 1).chain(CurveTween(curve: Curves.easeIn)), weight: 15),
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 1.12,
+        end: 1,
+      ).chain(CurveTween(curve: Curves.easeIn)),
+      weight: 15,
+    ),
     TweenSequenceItem(tween: ConstantTween<double>(1), weight: 40),
   ]);
 
@@ -55,8 +76,20 @@ class _BeatingHeartState extends State<BeatingHeart> with SingleTickerProviderSt
         child: ScaleTransition(
           scale: _beat.animate(_c),
           child: Container(
-            decoration: BoxDecoration(boxShadow: [BoxShadow(color: c.heartBg, blurRadius: 16, offset: const Offset(0, 4))]),
-            child: Icon(Icons.favorite_rounded, size: widget.size, color: c.heart),
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: c.heartBg,
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.favorite_rounded,
+              size: widget.size,
+              color: c.heart,
+            ),
           ),
         ),
       ),
@@ -74,8 +107,16 @@ class EcgLine extends StatefulWidget {
 }
 
 class _EcgLineState extends State<EcgLine> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: _period);
-  Duration get _period => Duration(milliseconds: (120000 / (widget.bpm > 0 ? widget.bpm : 60)).round().clamp(700, 4000));
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: _period,
+  );
+  Duration get _period => Duration(
+    milliseconds: (120000 / (widget.bpm > 0 ? widget.bpm : 60)).round().clamp(
+      700,
+      4000,
+    ),
+  );
 
   @override
   void didChangeDependencies() {
@@ -104,14 +145,14 @@ class _EcgLineState extends State<EcgLine> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
-        child: RepaintBoundary(
-          child: SizedBox(
-            height: widget.height,
-            width: double.infinity,
-            child: CustomPaint(painter: _EcgPainter(_c, context.c.heart)),
-          ),
-        ),
-      );
+    child: RepaintBoundary(
+      child: SizedBox(
+        height: widget.height,
+        width: double.infinity,
+        child: CustomPaint(painter: _EcgPainter(_c, context.c.heart)),
+      ),
+    ),
+  );
 }
 
 class _EcgPainter extends CustomPainter {
@@ -121,7 +162,20 @@ class _EcgPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const beat = [[14.0, 0.0], [4.0, -6.0], [4.0, 6.0], [6.0, 0.0], [3.0, 6.0], [5.0, -34.0], [5.0, 40.0], [4.0, -12.0], [5.0, 0.0], [8.0, -5.0], [8.0, 5.0], [16.0, 0.0]];
+    const beat = [
+      [14.0, 0.0],
+      [4.0, -6.0],
+      [4.0, 6.0],
+      [6.0, 0.0],
+      [3.0, 6.0],
+      [5.0, -34.0],
+      [5.0, 40.0],
+      [4.0, -12.0],
+      [5.0, 0.0],
+      [8.0, -5.0],
+      [8.0, 5.0],
+      [16.0, 0.0],
+    ];
     final sx = size.width / 320, sy = size.height / 60;
     final path = Path()..moveTo(0, 30 * sy);
     var x = 0.0, y = 30.0;
@@ -160,7 +214,9 @@ class AppLogo extends StatelessWidget {
   const AppLogo({super.key, this.size = 88});
   final double size;
   @override
-  Widget build(BuildContext context) => ExcludeSemantics(child: CustomPaint(size: Size.square(size), painter: _LogoPainter()));
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: CustomPaint(size: Size.square(size), painter: _LogoPainter()),
+  );
 }
 
 class _LogoPainter extends CustomPainter {
@@ -168,8 +224,19 @@ class _LogoPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final s = size.width / 512;
     canvas.scale(s);
-    final r = RRect.fromRectAndRadius(const Rect.fromLTWH(0, 0, 512, 512), const Radius.circular(112));
-    canvas.drawRRect(r, Paint()..shader = ui.Gradient.linear(Offset.zero, const Offset(512, 512), const [Color(0xFF2563EB), Color(0xFF7C3AED)]));
+    final r = RRect.fromRectAndRadius(
+      const Rect.fromLTWH(0, 0, 512, 512),
+      const Radius.circular(112),
+    );
+    canvas.drawRRect(
+      r,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          Offset.zero,
+          const Offset(512, 512),
+          const [Color(0xFF2563EB), Color(0xFF7C3AED)],
+        ),
+    );
     final heart = Path()
       ..moveTo(256, 412)
       ..cubicTo(150, 340, 92, 284, 92, 206)
@@ -188,13 +255,20 @@ class _LogoPainter extends CustomPainter {
       ..lineTo(284, 236)
       ..lineTo(306, 262)
       ..lineTo(400, 262);
-    canvas.drawPath(pulse, Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 30
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..color = Colors.white);
-    canvas.drawCircle(const Offset(400, 262), 24, Paint()..color = const Color(0xFF34D399));
+    canvas.drawPath(
+      pulse,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 30
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = Colors.white,
+    );
+    canvas.drawCircle(
+      const Offset(400, 262),
+      24,
+      Paint()..color = const Color(0xFF34D399),
+    );
   }
 
   @override
