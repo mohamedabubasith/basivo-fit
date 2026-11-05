@@ -6,7 +6,8 @@ plugins {
 
 android {
     namespace = "com.basivo.fit"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler and flutter_reactive_ble need API 37 to compile; minSdk/targetSdk are unchanged.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
