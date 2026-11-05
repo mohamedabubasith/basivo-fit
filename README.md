@@ -37,6 +37,10 @@
 ### How "live" is live?
 The Google Health app talks to the band over Bluetooth. This app can only read what the band has uploaded to Google, which is usually a few minutes behind real time.
 
+## Android and iPhone app (Flutter)
+
+A native Flutter version with the same design and extra animations lives in [`mobile/`](mobile/README.md). GitHub Actions tests and builds it on every push, and you can download the APK from the [latest Android build](../../releases/tag/mobile-latest).
+
 ## Tech
 
 React 18, TypeScript, Vite, `vite-plugin-pwa`, React Router, lucide icons and Fira Sans/Code fonts. Charts are hand-written SVG; there is no chart library.
