@@ -40,7 +40,7 @@ class FakeAuth implements AuthService {
 /// Google replies with nothing at all: an account with no tracker.
 HealthApi emptyApi(Future<String> Function() t) => HealthApi(token: t, client: MockClient((_) async => http.Response('{}', 200)));
 
-Future<void> pumpApp(WidgetTester tester, HealthStore store, {bool reduceMotion = true, Size size = const Size(390, 844)}) async {
+Future<void> pumpApp(WidgetTester tester, HealthStore store, {bool reduceMotion = true, Size size = const Size(390, 844), double textScale = 1}) async {
   SharedPreferences.setMockInitialValues({});
   tester.view.physicalSize = size * 2;
   tester.view.devicePixelRatio = 2;
@@ -48,7 +48,7 @@ Future<void> pumpApp(WidgetTester tester, HealthStore store, {bool reduceMotion 
   final theme = ThemeController();
   await store.start();
   await tester.pumpWidget(MediaQuery(
-    data: MediaQueryData(size: size, disableAnimations: reduceMotion),
+    data: MediaQueryData(size: size, disableAnimations: reduceMotion, textScaler: TextScaler.linear(textScale)),
     child: BasivoFitApp(store: store, theme: theme),
   ));
   await tester.pump(const Duration(milliseconds: 600));
@@ -107,6 +107,23 @@ void main() {
       store.dispose();
     });
   }
+
+  testWidgets('large system text (150%) does not break any tab', (tester) async {
+    final store = HealthStore(auth: FakeAuth());
+    await pumpApp(tester, store, textScale: 1.5);
+    await tapDemo(tester);
+    await settle(tester);
+    for (final tab in ['Heart tab', 'Sleep tab', 'Activity tab', 'Profile tab', 'Today tab']) {
+      await tester.tap(find.bySemanticsLabel(tab));
+      await settle(tester);
+      for (var i = 0; i < 8; i++) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
+        await settle(tester);
+      }
+    }
+    expect(tester.takeException(), isNull);
+    store.dispose();
+  });
 
   testWidgets('heart: week view and day navigation', (tester) async {
     final store = HealthStore(auth: FakeAuth());

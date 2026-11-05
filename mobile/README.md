@@ -56,7 +56,7 @@ The SHA-1 belongs to `android/app/debug.keystore`. That is a public debug key (p
 
 ```bash
 flutter pub get
-flutter test          # 16 tests: API parsing, sleep rules, every screen at 3 sizes, sign-in flows
+flutter test          # 17 tests: API parsing, sleep rules, every screen at 3 sizes and 150% text, sign-in flows
 flutter run           # on a phone or emulator
 ```
 
