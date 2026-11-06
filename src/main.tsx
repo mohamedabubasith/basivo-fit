@@ -10,4 +10,7 @@ import { initTheme } from './lib/theme';
 
 initTheme();
 
-createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);
+// The phone-app sign-in hand-off in index.html owns the page; do not start the web app under it.
+if (!(window as unknown as { __basivoHandoff?: boolean }).__basivoHandoff) {
+  createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);
+}

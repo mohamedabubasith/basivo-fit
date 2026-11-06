@@ -12,6 +12,32 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>PulseFolio</title>
     <meta name="description" content="Your Fitbit health, beautifully clear" />
+    <script>
+      // Basivo Fit phone app sign-in: pass Google's answer straight back to the app before anything else loads.
+      (function () {
+        var h = location.hash.slice(1);
+        var s = new URLSearchParams(h).get('state') || '';
+        if (!/^app\.[0-9a-f]{32}$/.test(s)) return;
+        window.__basivoHandoff = true;
+        var target = 'basivofit://auth#' + h;
+        document.addEventListener('DOMContentLoaded', function () {
+          var m = document.createElement('main');
+          m.style.cssText = 'font-family:system-ui,sans-serif;max-width:420px;margin:30vh auto 0;padding:0 24px;text-align:center;color:#F8FAFC';
+          var t = document.createElement('p');
+          t.textContent = 'Signed in. Returning to Basivo Fit\u2026';
+          t.style.cssText = 'font-size:18px;margin-bottom:24px';
+          var a = document.createElement('a');
+          a.href = target;
+          a.textContent = 'Open Basivo Fit';
+          a.style.cssText = 'display:inline-block;padding:14px 28px;border-radius:12px;background:linear-gradient(135deg,#3B82F6,#7C3AED);color:#fff;font-weight:600;text-decoration:none';
+          m.appendChild(t); m.appendChild(a);
+          document.body.style.background = '#0B1220';
+          document.body.replaceChildren(m);
+          // Show the button first, then try to open the app (some browsers need the tap instead).
+          setTimeout(function () { try { location.replace(target); } catch (e) {} }, 50);
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

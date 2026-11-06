@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart' show PlatformException;
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import '../data/auth.dart';
@@ -71,6 +72,13 @@ class HealthStore extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  static String _describe(Object e) {
+    if (e is StateError) return e.message;
+    if (e is PlatformException) return '${e.code} ${e.message ?? ''}'.trim();
+    final t = e.toString();
+    return t.length > 160 ? '${t.substring(0, 160)}…' : t;
+  }
+
   Future<void> signIn({bool switching = false}) async {
     loginMessage = null;
     try {
@@ -83,7 +91,7 @@ class HealthStore extends ChangeNotifier with WidgetsBindingObserver {
         'PulseFolio needs all the health permissions. Please sign in again and tick every box.',
       );
     } catch (e) {
-      _toLogin('Sign-in did not finish. Check your internet and try again.');
+      _toLogin('Sign-in did not finish: ${_describe(e)}');
     }
   }
 

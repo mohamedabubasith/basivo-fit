@@ -115,11 +115,17 @@ class BrowserOAuthService implements AuthService {
       rethrow;
     }
     final p = parseCallback(result);
-    if (p['state'] != state) throw StateError('Sign-in could not be verified.');
+    if (p['state'] != state) {
+      throw StateError(
+        'Sign-in could not be verified (the returned state did not match). Please try again.',
+      );
+    }
     if (p['error'] == 'access_denied') throw SignInCancelled();
     final token = p['access_token'];
     if (token == null || token.isEmpty) {
-      throw StateError(p['error'] ?? 'No token');
+      throw StateError(
+        'Google returned no token (${p['error'] ?? 'empty response'}).',
+      );
     }
     final granted = (p['scope'] ?? '').split(' ');
     if (!healthScopes.every(granted.contains)) throw MissingPermission();

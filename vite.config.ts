@@ -24,7 +24,14 @@ export default defineConfig({
           { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml' }
         ]
       },
-      workbox: { globPatterns: ['**/*.{js,css,html,svg,png,woff2}'] }
+      workbox: {
+        globPatterns: ['**/*.{js,css,svg,png,woff2}'],
+        navigateFallback: null,
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
+        runtimeCaching: [{ urlPattern: ({ request }) => request.mode === 'navigate', handler: 'NetworkFirst', options: { cacheName: 'pages', networkTimeoutSeconds: 4 } }]
+      }
     })
   ],
   server: { port: 5173, strictPort: true }
