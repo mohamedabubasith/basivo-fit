@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -101,6 +102,18 @@ enum SensorStatus {
 
 enum LinkState { connecting, connected, disconnected }
 
+/// The last Bluetooth steps and errors, shown under "Connection details" so a
+/// failed connection can be diagnosed from a screenshot.
+final bleLog = ValueNotifier<List<String>>(const []);
+
+void logBle(String msg) {
+  final t = DateTime.now();
+  String two(int v) => v.toString().padLeft(2, '0');
+  final line = '${two(t.hour)}:${two(t.minute)}:${two(t.second)}  $msg';
+  final l = [...bleLog.value, line];
+  bleLog.value = l.length > 40 ? l.sublist(l.length - 40) : l;
+}
+
 /// What the live screen needs from a heart rate sensor, so it can be faked in demo mode and tests.
 abstract class HeartSensor {
   bool get available;
@@ -112,6 +125,12 @@ abstract class HeartSensor {
 
   /// After connecting: whether the device really offers the Heart Rate Service.
   Future<bool> hasHeartRate(String deviceId);
+
+  /// Secure pairing, for bands that only send heart rate to a paired phone.
+  Future<void> ensureBonded(String deviceId);
+
+  /// Clears a stuck or stale pairing with the device.
+  Future<bool> resetPairing(String deviceId);
 }
 
 final _hrService = Uuid.parse('0000180d-0000-1000-8000-00805f9b34fb');
@@ -120,6 +139,9 @@ final _hrMeasurement = Uuid.parse('00002a37-0000-1000-8000-00805f9b34fb');
 /// Real Bluetooth sensor (Android and iPhone).
 class BleHeartSensor implements HeartSensor {
   final _ble = FlutterReactiveBle();
+  static const _native = MethodChannel('basivo/ble');
+  final _seen = <String>{};
+  bool get _android => defaultTargetPlatform == TargetPlatform.android;
 
   @override
   bool get available =>
@@ -154,7 +176,13 @@ class BleHeartSensor implements HeartSensor {
   }
 
   @override
-  Stream<SensorDevice> scan() => _ble
+  Stream<SensorDevice> scan() {
+    _seen.clear();
+    logBle('Searching for heart rate devices');
+    return _scanAll();
+  }
+
+  Stream<SensorDevice> _scanAll() => _ble
       // Scan everything, not only devices that list 0x180D in the advertisement:
       // some bands (Fitbit, Pixel Watch) put it in the scan response or only expose
       // it after connecting, and a service filter would hide them.
@@ -166,6 +194,15 @@ class BleHeartSensor implements HeartSensor {
       .where(
         (d) => looksLikeHeartRate(d.name, d.serviceUuids.contains(_hrService)),
       )
+      .map((d) {
+        if (_seen.add(d.id)) {
+          logBle(
+            'Found ${d.name.isEmpty ? '(no name)' : d.name}  ${d.id}  '
+            '${d.serviceUuids.contains(_hrService) ? 'sharing HR' : 'HR not announced'}  ${d.rssi} dBm',
+          );
+        }
+        return d;
+      })
       .map(
         (d) => SensorDevice(
           id: d.id,
@@ -180,42 +217,114 @@ class BleHeartSensor implements HeartSensor {
     try {
       await _ble.discoverAllServices(deviceId);
       final services = await _ble.getDiscoveredServices(deviceId);
-      return services.any((s) => s.id == _hrService);
-    } catch (_) {
+      final ok = services.any((s) => s.id == _hrService);
+      logBle(
+        'Services: ${services.length} found, heart rate ${ok ? 'yes' : 'NO'}',
+      );
+      return ok;
+    } catch (e) {
       // If discovery itself fails, let the subscription decide.
+      logBle('Service discovery failed: $e');
       return true;
     }
   }
 
   @override
-  Stream<LinkState> connect(String deviceId) => _ble
-      .connectToDevice(
-        id: deviceId,
-        servicesWithCharacteristicsToDiscover: {
-          _hrService: [_hrMeasurement],
-        },
-        connectionTimeout: const Duration(seconds: 15),
-      )
-      .map(
-        (u) => switch (u.connectionState) {
-          DeviceConnectionState.connecting => LinkState.connecting,
-          DeviceConnectionState.connected => LinkState.connected,
-          _ => LinkState.disconnected,
-        },
-      );
+  Future<void> ensureBonded(String deviceId) async {
+    if (!_android) return;
+    try {
+      var state = await _native.invokeMethod<int>('bondState', {
+        'id': deviceId,
+      });
+      if (state == 12) {
+        logBle('Already paired');
+        return;
+      }
+      logBle('No heart rate yet: asking Android to pair (state $state)');
+      await _native.invokeMethod<bool>('createBond', {'id': deviceId});
+      for (var i = 0; i < 30; i++) {
+        await Future<void>.delayed(const Duration(seconds: 1));
+        state = await _native.invokeMethod<int>('bondState', {'id': deviceId});
+        if (state != 11) break;
+      }
+      logBle(state == 12 ? 'Paired' : 'Pairing did not finish (state $state)');
+    } catch (e) {
+      logBle('Pairing error: $e');
+    }
+  }
 
   @override
-  Stream<HrReading> readings(String deviceId) => _ble
-      .subscribeToCharacteristic(
-        QualifiedCharacteristic(
-          serviceId: _hrService,
-          characteristicId: _hrMeasurement,
-          deviceId: deviceId,
-        ),
-      )
-      .map(parseHeartRate)
-      .where((r) => r != null && r.bpm > 0)
-      .cast<HrReading>();
+  Future<bool> resetPairing(String deviceId) async {
+    if (!_android) return false;
+    try {
+      final ok =
+          await _native.invokeMethod<bool>('removeBond', {'id': deviceId}) ??
+          false;
+      logBle(ok ? 'Old pairing removed' : 'No pairing to remove');
+      return ok;
+    } catch (e) {
+      logBle('Reset pairing error: $e');
+      return false;
+    }
+  }
+
+  @override
+  Stream<LinkState> connect(String deviceId) {
+    logBle('Connecting to $deviceId');
+    // Connect the moment the device is seen advertising: bands such as the
+    // Fitbit Air rotate their private address, so an address from an older
+    // scan can be stale.
+    return _ble
+        .connectToAdvertisingDevice(
+          id: deviceId,
+          withServices: const [],
+          prescanDuration: const Duration(seconds: 6),
+          connectionTimeout: const Duration(seconds: 20),
+        )
+        .map((u) {
+          final f = u.failure;
+          logBle(
+            'Link: ${u.connectionState.name}${f == null ? '' : '  error ${f.code.name}: ${f.message}'}',
+          );
+          return switch (u.connectionState) {
+            DeviceConnectionState.connecting => LinkState.connecting,
+            DeviceConnectionState.connected => LinkState.connected,
+            _ => LinkState.disconnected,
+          };
+        })
+        .handleError((Object e) {
+          logBle('Link error: $e');
+          throw e;
+        });
+  }
+
+  @override
+  Stream<HrReading> readings(String deviceId) {
+    logBle('Listening for heart rate');
+    var first = true;
+    return _ble
+        .subscribeToCharacteristic(
+          QualifiedCharacteristic(
+            serviceId: _hrService,
+            characteristicId: _hrMeasurement,
+            deviceId: deviceId,
+          ),
+        )
+        .map(parseHeartRate)
+        .where((r) => r != null && r.bpm > 0)
+        .cast<HrReading>()
+        .map((r) {
+          if (first) {
+            first = false;
+            logBle('First heart rate: ${r.bpm} bpm');
+          }
+          return r;
+        })
+        .handleError((Object e) {
+          logBle('Heart rate error: $e');
+          throw e;
+        });
+  }
 }
 
 /// A pretend chest strap for demo mode and tests: a resting rate that drifts, with a short climb.
@@ -264,6 +373,12 @@ class SimulatedHeartSensor implements HeartSensor {
 
   @override
   Future<bool> hasHeartRate(String deviceId) async => true;
+
+  @override
+  Future<void> ensureBonded(String deviceId) async {}
+
+  @override
+  Future<bool> resetPairing(String deviceId) async => true;
 
   @override
   Stream<HrReading> readings(String deviceId) async* {

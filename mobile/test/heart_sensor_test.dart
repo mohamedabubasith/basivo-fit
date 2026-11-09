@@ -44,8 +44,13 @@ class FakeSensor implements HeartSensor {
   Stream<HrReading> readings(String deviceId) => readingsCtl.stream;
 
   bool sharing = true;
+  int bonds = 0;
   @override
   Future<bool> hasHeartRate(String deviceId) async => sharing;
+  @override
+  Future<void> ensureBonded(String deviceId) async => bonds++;
+  @override
+  Future<bool> resetPairing(String deviceId) async => true;
 }
 
 void main() {
@@ -200,12 +205,14 @@ void main() {
         real: f,
         retryDelay: const Duration(milliseconds: 10),
         noDataTimeout: const Duration(milliseconds: 30),
+        bondAfter: const Duration(milliseconds: 10),
       );
       await live.connect(const SensorDevice(id: 'air', name: 'Fitbit Air'));
       await Future<void>.delayed(const Duration(milliseconds: 400));
       await pumpEventQueue();
       expect(live.phase, LivePhase.failed);
       expect(f.connects, 3);
+      expect(f.bonds, 3, reason: 'tried secure pairing on each silent try');
     });
 
     test('a reading resets the failed-try count', () async {

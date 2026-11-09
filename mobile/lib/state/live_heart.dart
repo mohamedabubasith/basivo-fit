@@ -29,6 +29,7 @@ class LiveHeart extends ChangeNotifier {
     HeartSensor? demo,
     this.retryDelay = const Duration(seconds: 5),
     this.noDataTimeout = const Duration(seconds: 20),
+    this.bondAfter = const Duration(seconds: 8),
     this.maxAttempts = 3,
   }) : _real = real,
        _demo = demo ?? SimulatedHeartSensor();
@@ -38,6 +39,9 @@ class LiveHeart extends ChangeNotifier {
 
   /// Connected but no heart rate after this long counts as a failed attempt.
   final Duration noDataTimeout;
+
+  /// Connected but silent for this long: try secure pairing.
+  final Duration bondAfter;
 
   /// Failed attempts in a row (before any reading) before giving up.
   final int maxAttempts;
@@ -145,6 +149,13 @@ class LiveHeart extends ChangeNotifier {
     _scanStop = Timer(const Duration(seconds: 15), stopScan);
   }
 
+  /// Clears a stuck pairing with the last device, then searches again.
+  Future<void> resetPairing() async {
+    final d = device;
+    if (d != null) await sensor.resetPairing(d.id);
+    await startScan();
+  }
+
   void stopScan() {
     _scan?.cancel();
     _scan = null;
@@ -184,8 +195,16 @@ class LiveHeart extends ChangeNotifier {
         }
         _subscribe(d.id);
         _noData?.cancel();
-        _noData = Timer(noDataTimeout, () {
-          if (latest == null) _lost();
+        // Some bands (Fitbit Air) only send heart rate to a paired phone:
+        // if nothing arrives soon, pair, then listen again.
+        _noData = Timer(bondAfter, () async {
+          if (latest != null || !_wanted || device?.id != d.id) return;
+          await sensor.ensureBonded(d.id);
+          if (latest != null || !_wanted || device?.id != d.id) return;
+          _subscribe(d.id);
+          _noData = Timer(noDataTimeout, () {
+            if (latest == null) _lost();
+          });
         });
       } else if (s == LinkState.disconnected) {
         _lost();

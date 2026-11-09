@@ -102,6 +102,11 @@ class LiveHeartCard extends StatelessWidget {
             kind: BtnKind.primary,
             onTap: live.startScan,
           ),
+          AppButton(
+            label: 'Reset pairing and try again',
+            icon: LucideIcons.rotateCcw,
+            onTap: live.resetPairing,
+          ),
         ],
       ),
       LivePhase.idle => _Idle(live: live),
@@ -137,10 +142,60 @@ class LiveHeartCard extends StatelessWidget {
               child: KeyedSubtree(key: ValueKey(live.phase), child: body),
             ),
           ),
+          if (live.phase != LivePhase.live && !live.demoMode)
+            _Details(expanded: live.phase == LivePhase.failed),
         ],
       ),
     );
   }
+}
+
+/// Step-by-step Bluetooth log, so a failed connection can be shared as a screenshot.
+class _Details extends StatelessWidget {
+  const _Details({required this.expanded});
+  final bool expanded;
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<List<String>>(
+    valueListenable: bleLog,
+    builder: (context, lines, _) {
+      if (lines.isEmpty) return const SizedBox.shrink();
+      final c = context.c;
+      return Material(
+        type: MaterialType.transparency,
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            initiallyExpanded: expanded,
+            tilePadding: EdgeInsets.zero,
+            iconColor: c.mutedFg,
+            collapsedIconColor: c.mutedFg,
+            leading: Icon(LucideIcons.terminal, size: 18, color: c.mutedFg),
+            title: Text(
+              'Connection details',
+              style: TextStyle(fontSize: 14, color: c.fg),
+            ),
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(Space.s3),
+                decoration: BoxDecoration(
+                  color: c.muted,
+                  borderRadius: BorderRadius.circular(Radii.sm),
+                  border: Border.all(color: c.border),
+                ),
+                child: SelectableText(
+                  lines
+                      .skip(lines.length > 14 ? lines.length - 14 : 0)
+                      .join('\n'),
+                  style: mono(context, size: 11, color: c.mutedFg),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 /// How to turn on heart rate sharing for the device the user picked.
