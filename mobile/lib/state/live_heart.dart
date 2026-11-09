@@ -72,6 +72,9 @@ class LiveHeart extends ChangeNotifier {
   Timer? _scanStop, _retry, _noData;
   bool _wanted = false;
 
+  /// Waiting for the user to accept Android's pairing popup.
+  bool pairing = false;
+
   bool get isLive =>
       phase == LivePhase.live &&
       latest != null &&
@@ -199,8 +202,18 @@ class LiveHeart extends ChangeNotifier {
         // if nothing arrives soon, pair, then listen again.
         _noData = Timer(bondAfter, () async {
           if (latest != null || !_wanted || device?.id != d.id) return;
-          await sensor.ensureBonded(d.id);
+          pairing = true;
+          notifyListeners();
+          final paired = await sensor.ensureBonded(d.id);
+          pairing = false;
+          notifyListeners();
           if (latest != null || !_wanted || device?.id != d.id) return;
+          if (paired) {
+            // Reopen the link so the band sees a paired, encrypted connection.
+            logBle('Reconnecting after pairing');
+            await connect(d, retry: true);
+            return;
+          }
           _subscribe(d.id);
           _noData = Timer(noDataTimeout, () {
             if (latest == null) _lost();

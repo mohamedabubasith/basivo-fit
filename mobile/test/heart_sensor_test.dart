@@ -48,7 +48,11 @@ class FakeSensor implements HeartSensor {
   @override
   Future<bool> hasHeartRate(String deviceId) async => sharing;
   @override
-  Future<void> ensureBonded(String deviceId) async => bonds++;
+  Future<bool> ensureBonded(String deviceId) async {
+    bonds++;
+    return false;
+  }
+
   @override
   Future<bool> resetPairing(String deviceId) async => true;
 }

@@ -127,7 +127,8 @@ abstract class HeartSensor {
   Future<bool> hasHeartRate(String deviceId);
 
   /// Secure pairing, for bands that only send heart rate to a paired phone.
-  Future<void> ensureBonded(String deviceId);
+  /// Returns true when a new pairing was made (the link should be reopened).
+  Future<bool> ensureBonded(String deviceId);
 
   /// Clears a stuck or stale pairing with the device.
   Future<bool> resetPairing(String deviceId);
@@ -230,26 +231,35 @@ class BleHeartSensor implements HeartSensor {
   }
 
   @override
-  Future<void> ensureBonded(String deviceId) async {
-    if (!_android) return;
+  Future<bool> ensureBonded(String deviceId) async {
+    if (!_android) return false;
     try {
       var state = await _native.invokeMethod<int>('bondState', {
         'id': deviceId,
       });
       if (state == 12) {
         logBle('Already paired');
-        return;
+        return false;
       }
       logBle('No heart rate yet: asking Android to pair (state $state)');
-      await _native.invokeMethod<bool>('createBond', {'id': deviceId});
+      final started = await _native.invokeMethod<bool>('createBond', {
+        'id': deviceId,
+      });
+      logBle(
+        started == true
+            ? 'Pairing started: tap Pair on the popup'
+            : 'Android would not start pairing',
+      );
       for (var i = 0; i < 30; i++) {
         await Future<void>.delayed(const Duration(seconds: 1));
         state = await _native.invokeMethod<int>('bondState', {'id': deviceId});
-        if (state != 11) break;
+        if (state != 11 && i >= 2) break;
       }
       logBle(state == 12 ? 'Paired' : 'Pairing did not finish (state $state)');
+      return state == 12;
     } catch (e) {
       logBle('Pairing error: $e');
+      return false;
     }
   }
 
@@ -375,7 +385,7 @@ class SimulatedHeartSensor implements HeartSensor {
   Future<bool> hasHeartRate(String deviceId) async => true;
 
   @override
-  Future<void> ensureBonded(String deviceId) async {}
+  Future<bool> ensureBonded(String deviceId) async => false;
 
   @override
   Future<bool> resetPairing(String deviceId) async => true;

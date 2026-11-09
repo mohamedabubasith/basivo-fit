@@ -26,7 +26,20 @@ class MainActivity : FlutterActivity() {
                     when (call.method) {
                         // 10 = not paired, 11 = pairing, 12 = paired
                         "bondState" -> result.success(device.bondState)
-                        "createBond" -> result.success(device.createBond())
+                        // Pair over Bluetooth Low Energy: the default can pick
+                        // classic Bluetooth for a band with a random address.
+                        "createBond" -> {
+                            val ok = try {
+                                val m = device.javaClass.getMethod(
+                                    "createBond",
+                                    Int::class.javaPrimitiveType,
+                                )
+                                m.invoke(device, 2 /* TRANSPORT_LE */) as Boolean
+                            } catch (e: Exception) {
+                                device.createBond()
+                            }
+                            result.success(ok)
+                        }
                         "removeBond" -> {
                             val m = device.javaClass.getMethod("removeBond")
                             result.success(m.invoke(device) as Boolean)

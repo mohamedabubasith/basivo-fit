@@ -24,7 +24,9 @@ class LiveHeartCard extends StatelessWidget {
       LivePhase.live => _Live(live: live, limits: limits),
       LivePhase.scanning => _Scanning(live: live),
       LivePhase.connecting => _Busy(
-        text: 'Connecting to ${live.device?.name ?? 'sensor'}…',
+        text: live.pairing
+            ? 'Pairing with ${live.device?.name ?? 'the sensor'}… If a popup asks to pair, tap Pair.'
+            : 'Connecting to ${live.device?.name ?? 'sensor'}…',
         onCancel: () => live.stop(),
       ),
       LivePhase.lost => _Busy(
