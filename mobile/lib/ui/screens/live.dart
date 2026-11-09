@@ -187,7 +187,7 @@ class _Details extends StatelessWidget {
                 ),
                 child: SelectableText(
                   lines
-                      .skip(lines.length > 14 ? lines.length - 14 : 0)
+                      .skip(lines.length > 24 ? lines.length - 24 : 0)
                       .join('\n'),
                   style: mono(context, size: 11, color: c.mutedFg),
                 ),

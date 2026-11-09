@@ -142,6 +142,7 @@ class BleHeartSensor implements HeartSensor {
   final _ble = FlutterReactiveBle();
   static const _native = MethodChannel('basivo/ble');
   final _seen = <String>{};
+  final _pairTried = <String>{};
   bool get _android => defaultTargetPlatform == TargetPlatform.android;
 
   @override
@@ -222,6 +223,15 @@ class BleHeartSensor implements HeartSensor {
       logBle(
         'Services: ${services.length} found, heart rate ${ok ? 'yes' : 'NO'}',
       );
+      logBle('Service ids: ${services.map((s) => _short(s.id)).join(' ')}');
+      for (final s in services.where((s) => s.id == _hrService)) {
+        for (final ch in s.characteristics) {
+          logBle(
+            'HR char ${_short(ch.id)}: '
+            '${[if (ch.isNotifiable) 'notify', if (ch.isIndicatable) 'indicate', if (ch.isReadable) 'read', if (ch.isWritableWithResponse || ch.isWritableWithoutResponse) 'write'].join('/')}',
+          );
+        }
+      }
       return ok;
     } catch (e) {
       // If discovery itself fails, let the subscription decide.
@@ -233,6 +243,9 @@ class BleHeartSensor implements HeartSensor {
   @override
   Future<bool> ensureBonded(String deviceId) async {
     if (!_android) return false;
+    // Ask at most once per device per session: a band that ignores pairing
+    // (Fitbit Air does) should not hold up the connection every time.
+    if (!_pairTried.add(deviceId)) return false;
     try {
       var state = await _native.invokeMethod<int>('bondState', {
         'id': deviceId,
@@ -261,6 +274,42 @@ class BleHeartSensor implements HeartSensor {
       logBle('Pairing error: $e');
       return false;
     }
+  }
+
+  /// Subscribes to every Heart Rate Measurement characteristic the device has
+  /// (some devices expose more than one, which the single lookup rejects).
+  Stream<List<int>> _subscribeAll(String deviceId) async* {
+    final chars = (await _ble.getDiscoveredServices(deviceId))
+        .where((s) => s.id == _hrService)
+        .expand((s) => s.characteristics)
+        .where((c) => c.id == _hrMeasurement)
+        .toList();
+    if (chars.isEmpty) {
+      throw Exception('Heart Rate Measurement characteristic not found');
+    }
+    logBle('Subscribing to ${chars.length} heart rate characteristic(s)');
+    if (chars.length == 1) {
+      yield* chars.single.subscribe();
+      return;
+    }
+    final ctl = StreamController<List<int>>();
+    final subs = [
+      for (final c in chars)
+        c.subscribe().listen(ctl.add, onError: ctl.addError),
+    ];
+    ctl.onCancel = () async {
+      for (final s in subs) {
+        await s.cancel();
+      }
+    };
+    yield* ctl.stream;
+  }
+
+  static String _short(Uuid u) {
+    final s = u.toString();
+    return s.length >= 8 && s.endsWith('-0000-1000-8000-00805f9b34fb')
+        ? s.substring(4, 8)
+        : s.substring(0, 8);
   }
 
   @override
@@ -312,14 +361,17 @@ class BleHeartSensor implements HeartSensor {
   Stream<HrReading> readings(String deviceId) {
     logBle('Listening for heart rate');
     var first = true;
-    return _ble
-        .subscribeToCharacteristic(
-          QualifiedCharacteristic(
-            serviceId: _hrService,
-            characteristicId: _hrMeasurement,
-            deviceId: deviceId,
-          ),
-        )
+    var packets = 0;
+    return _subscribeAll(deviceId)
+        .map((b) {
+          packets++;
+          if (packets <= 3 || packets % 30 == 0) {
+            logBle(
+              'Packet $packets: ${b.map((x) => x.toRadixString(16).padLeft(2, '0')).join(' ')}',
+            );
+          }
+          return b;
+        })
         .map(parseHeartRate)
         .where((r) => r != null && r.bpm > 0)
         .cast<HrReading>()

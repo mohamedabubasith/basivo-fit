@@ -202,6 +202,7 @@ class LiveHeart extends ChangeNotifier {
         // if nothing arrives soon, pair, then listen again.
         _noData = Timer(bondAfter, () async {
           if (latest != null || !_wanted || device?.id != d.id) return;
+          logBle('No heart rate after ${bondAfter.inSeconds} s');
           pairing = true;
           notifyListeners();
           final paired = await sensor.ensureBonded(d.id);
