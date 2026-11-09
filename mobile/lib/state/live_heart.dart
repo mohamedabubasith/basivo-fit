@@ -13,6 +13,12 @@ enum LivePhase {
   connecting,
   live,
   lost,
+
+  /// Connected, but the device does not share heart rate (sharing is off).
+  notSharing,
+
+  /// Could not connect after several tries.
+  failed,
 }
 
 /// Second-by-second heart rate from a Bluetooth sensor: permissions, scanning,
@@ -22,11 +28,23 @@ class LiveHeart extends ChangeNotifier {
     required HeartSensor real,
     HeartSensor? demo,
     this.retryDelay = const Duration(seconds: 5),
+    this.noDataTimeout = const Duration(seconds: 20),
+    this.maxAttempts = 3,
   }) : _real = real,
        _demo = demo ?? SimulatedHeartSensor();
 
   /// How long to wait before reconnecting after the sensor drops out.
   final Duration retryDelay;
+
+  /// Connected but no heart rate after this long counts as a failed attempt.
+  final Duration noDataTimeout;
+
+  /// Failed attempts in a row (before any reading) before giving up.
+  final int maxAttempts;
+  int _attempts = 0;
+
+  /// This device has sent heart rate since the user picked it.
+  bool _gotData = false;
 
   final HeartSensor _real, _demo;
   bool demoMode = false;
@@ -47,7 +65,7 @@ class LiveHeart extends ChangeNotifier {
   StreamSubscription<SensorDevice>? _scan;
   StreamSubscription<LinkState>? _link;
   StreamSubscription<HrReading>? _data;
-  Timer? _scanStop, _retry;
+  Timer? _scanStop, _retry, _noData;
   bool _wanted = false;
 
   bool get isLive =>
@@ -130,9 +148,13 @@ class LiveHeart extends ChangeNotifier {
     if (phase == LivePhase.scanning) _set(LivePhase.idle);
   }
 
-  Future<void> connect(SensorDevice d) async {
+  Future<void> connect(SensorDevice d, {bool retry = false}) async {
     stopScan();
     await _disconnectStreams();
+    if (!retry) {
+      _attempts = 0;
+      _gotData = false;
+    }
     device = d;
     _wanted = true;
     history.clear();
@@ -150,13 +172,27 @@ class LiveHeart extends ChangeNotifier {
         await p.setString('ble.name', d.name);
       } catch (_) {}
     }
-    _link = sensor.connect(d.id).listen((s) {
+    _link = sensor.connect(d.id).listen((s) async {
       if (s == LinkState.connected) {
+        if (!await sensor.hasHeartRate(d.id)) {
+          await _giveUp(LivePhase.notSharing);
+          return;
+        }
         _subscribe(d.id);
+        _noData?.cancel();
+        _noData = Timer(noDataTimeout, () {
+          if (latest == null) _lost();
+        });
       } else if (s == LinkState.disconnected) {
         _lost();
       }
     }, onError: (_) => _lost());
+  }
+
+  Future<void> _giveUp(LivePhase p) async {
+    _wanted = false;
+    await _disconnectStreams();
+    _set(p);
   }
 
   /// Reconnects to the sensor used last time, if there is one.
@@ -181,6 +217,9 @@ class LiveHeart extends ChangeNotifier {
   }
 
   void _add(HrReading r) {
+    _attempts = 0;
+    _gotData = true;
+    _noData?.cancel();
     latest = r;
     history.add(r);
     final cutoff = r.at.subtract(const Duration(minutes: 2));
@@ -198,18 +237,26 @@ class LiveHeart extends ChangeNotifier {
 
   void _lost() {
     _data?.cancel();
+    _noData?.cancel();
     if (!_wanted) return;
+    // Never got a reading from this device: count the try, and stop after a few.
+    // A device that worked keeps reconnecting (it may just be out of range).
+    if (!_gotData && ++_attempts >= maxAttempts) {
+      unawaited(_giveUp(LivePhase.failed));
+      return;
+    }
     _set(LivePhase.lost);
     // Keep trying while the user still wants the connection.
     _retry?.cancel();
     _retry = Timer(retryDelay, () {
-      if (_wanted && device != null) connect(device!);
+      if (_wanted && device != null) connect(device!, retry: true);
     });
   }
 
   Future<void> _disconnectStreams() async {
     // Do not wait for the sensor to confirm: a stalled radio must never block Disconnect.
     _retry?.cancel();
+    _noData?.cancel();
     unawaited(_data?.cancel());
     unawaited(_link?.cancel());
     _data = null;
@@ -244,6 +291,7 @@ class LiveHeart extends ChangeNotifier {
     _data?.cancel();
     _scanStop?.cancel();
     _retry?.cancel();
+    _noData?.cancel();
     super.dispose();
   }
 }

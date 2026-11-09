@@ -75,6 +75,33 @@ class LiveHeartCard extends StatelessWidget {
             'Bluetooth heart rate works in the Android and iPhone app. On the web, use the demo.',
         actions: [],
       ),
+      LivePhase.notSharing => _Message(
+        icon: LucideIcons.heartOff,
+        text:
+            '${live.device?.name ?? 'This device'} is nearby but is not sharing heart rate yet.\n\n$_fitbitSteps\n\nThen tap Try again.',
+        actions: [
+          AppButton(
+            label: 'Try again',
+            kind: BtnKind.primary,
+            onTap: live.startScan,
+          ),
+        ],
+      ),
+      LivePhase.failed => _Message(
+        icon: LucideIcons.bluetoothOff,
+        text:
+            'Could not get heart rate from ${live.device?.name ?? 'the sensor'}. Check these, then try again:\n\n'
+            '1. Heart rate sharing is on. $_fitbitSteps\n'
+            '2. You did not pair it in Android Bluetooth settings. If it shows there as "Pairing" or paired, tap it and choose Forget. Basivo Fit connects to it directly.\n'
+            '3. It is close to your phone, and no other app such as Zwift or Peloton is connected to it.',
+        actions: [
+          AppButton(
+            label: 'Try again',
+            kind: BtnKind.primary,
+            onTap: live.startScan,
+          ),
+        ],
+      ),
       LivePhase.idle => _Idle(live: live),
     };
     return AppCard(
@@ -113,6 +140,9 @@ class LiveHeartCard extends StatelessWidget {
     );
   }
 }
+
+const _fitbitSteps =
+    'On a Fitbit Air or Charge 6: open the Google Health app, go to Connections, tap your Fitbit, then turn on Share heart rate (and Always visible if you see it).';
 
 class _Idle extends StatelessWidget {
   const _Idle({required this.live});
@@ -158,10 +188,11 @@ class _Help extends StatelessWidget {
           'Which devices work?',
           style: TextStyle(fontSize: 14, color: context.c.fg),
         ),
-        children: const [
-          Muted(
-            'Any device that sends heart rate in the standard Bluetooth format works, for example most chest straps and arm bands, and many watches with a "broadcast heart rate" or "heart rate on equipment" setting.\n\n'
-            'Fitbit bands such as the Fitbit Air only share heart rate with the Google Health app, so they do not show up here. For those, Basivo Fit shows the latest reading from Google instead, usually a few minutes old.',
+        children: [
+          const Muted(
+            'Any device that sends heart rate in the standard Bluetooth format works: most chest straps and arm bands, and watches with a "broadcast heart rate" or "share heart rate" setting.\n\n'
+            '$_fitbitSteps Keep the band near your phone, then tap Find a sensor.\n\n'
+            'Do not pair it in Android Bluetooth settings. Basivo Fit connects to it directly, and a pairing there can get stuck on "Pairing".',
             size: 13,
           ),
         ],
@@ -226,11 +257,24 @@ class _Scanning extends StatelessWidget {
                       ),
                       const SizedBox(width: Space.s3),
                       Expanded(
-                        child: Text(
-                          live.found[i].name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              live.found[i].name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (!live.found[i].advertisesHr)
+                              const Muted(
+                                'Turn on heart rate sharing first',
+                                size: 12,
+                              ),
+                          ],
                         ),
                       ),
                       _SignalIcon(rssi: live.found[i].rssi),
@@ -240,6 +284,13 @@ class _Scanning extends StatelessWidget {
               ),
             ),
           ),
+        if (live.found.isEmpty) ...[
+          const Muted(
+            'Using a Fitbit Air or Charge 6? Turn on Share heart rate in the Google Health app first (Connections, your Fitbit, Share heart rate).',
+            size: 13,
+          ),
+          const SizedBox(height: Space.s2),
+        ],
         AppButton(
           label: 'Stop looking',
           kind: BtnKind.text,

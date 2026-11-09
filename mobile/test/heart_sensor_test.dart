@@ -36,6 +36,10 @@ class FakeSensor implements HeartSensor {
 
   @override
   Stream<HrReading> readings(String deviceId) => readingsCtl.stream;
+
+  bool sharing = true;
+  @override
+  Future<bool> hasHeartRate(String deviceId) async => sharing;
 }
 
 void main() {
@@ -165,5 +169,59 @@ void main() {
       expect(live.phase, isNot(LivePhase.lost));
       await live.stop();
     });
+
+    test('a band that is not sharing heart rate says so', () async {
+      final f = FakeSensor()..sharing = false;
+      final live = LiveHeart(real: f);
+      await live.connect(const SensorDevice(id: 'air', name: 'Fitbit Air'));
+      await pumpEventQueue();
+      expect(live.phase, LivePhase.notSharing);
+      expect(f.connects, 1, reason: 'no endless reconnect loop');
+    });
+
+    test('connected but silent: gives up after 3 tries with help', () async {
+      final f = FakeSensor();
+      final live = LiveHeart(
+        real: f,
+        retryDelay: const Duration(milliseconds: 10),
+        noDataTimeout: const Duration(milliseconds: 30),
+      );
+      await live.connect(const SensorDevice(id: 'air', name: 'Fitbit Air'));
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      await pumpEventQueue();
+      expect(live.phase, LivePhase.failed);
+      expect(f.connects, 3);
+    });
+
+    test('a reading resets the failed-try count', () async {
+      final f = FakeSensor();
+      final live = LiveHeart(
+        real: f,
+        retryDelay: const Duration(milliseconds: 10),
+      );
+      await live.connect(const SensorDevice(id: 'x', name: 'X'));
+      await pumpEventQueue();
+      f.readingsCtl.add(HrReading(bpm: 70, at: DateTime.now()));
+      await pumpEventQueue();
+      for (var k = 0; k < 4; k++) {
+        f.linkCtl.add(LinkState.disconnected);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await pumpEventQueue();
+      }
+      expect(live.phase, isNot(LivePhase.failed));
+      await live.stop();
+    });
+  });
+
+  test('scan keeps heart rate sources and known wearables only', () {
+    expect(looksLikeHeartRate('', true), isTrue);
+    expect(looksLikeHeartRate('Fitbit Air', false), isTrue);
+    expect(looksLikeHeartRate('Air', false), isTrue);
+    expect(looksLikeHeartRate('Charge 6', false), isTrue);
+    expect(looksLikeHeartRate('Pixel Watch 3', false), isTrue);
+    expect(looksLikeHeartRate('Polar H10 1234', false), isTrue);
+    expect(looksLikeHeartRate('AirPods Pro', false), isFalse);
+    expect(looksLikeHeartRate('[TV] Samsung', false), isFalse);
+    expect(looksLikeHeartRate('', false), isFalse);
   });
 }

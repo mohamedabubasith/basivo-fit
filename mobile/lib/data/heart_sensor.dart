@@ -64,10 +64,31 @@ double? rmssd(List<double> rr) {
 }
 
 class SensorDevice {
-  const SensorDevice({required this.id, required this.name, this.rssi});
+  const SensorDevice({
+    required this.id,
+    required this.name,
+    this.rssi,
+    this.advertisesHr = true,
+  });
   final String id, name;
   final int? rssi;
+
+  /// False for devices found by name only (for example a Fitbit band) that did
+  /// not announce the heart rate service: they may need sharing turned on first.
+  final bool advertisesHr;
 }
+
+/// Names of wearables that can share heart rate but may not announce the
+/// heart rate service in their advertisement (Fitbit Air, Charge 6, Pixel Watch...).
+final _wearableName = RegExp(
+  r'fitbit|\bair\b|charge|pixel watch|inspire|versa|sense|polar|wahoo|tickr|garmin|coros|whoop|amazfit|suunto|\bhrm|heart',
+  caseSensitive: false,
+);
+
+/// True when an advertisement looks like a heart rate source: it announces the
+/// standard Heart Rate Service, or its name is a known wearable.
+bool looksLikeHeartRate(String name, bool advertisesHr) =>
+    advertisesHr || (name.isNotEmpty && _wearableName.hasMatch(name));
 
 enum SensorStatus {
   unknown,
@@ -88,6 +109,9 @@ abstract class HeartSensor {
   Stream<SensorDevice> scan();
   Stream<LinkState> connect(String deviceId);
   Stream<HrReading> readings(String deviceId);
+
+  /// After connecting: whether the device really offers the Heart Rate Service.
+  Future<bool> hasHeartRate(String deviceId);
 }
 
 final _hrService = Uuid.parse('0000180d-0000-1000-8000-00805f9b34fb');
@@ -131,18 +155,37 @@ class BleHeartSensor implements HeartSensor {
 
   @override
   Stream<SensorDevice> scan() => _ble
+      // Scan everything, not only devices that list 0x180D in the advertisement:
+      // some bands (Fitbit, Pixel Watch) put it in the scan response or only expose
+      // it after connecting, and a service filter would hide them.
       .scanForDevices(
-        withServices: [_hrService],
+        withServices: const [],
         scanMode: ScanMode.lowLatency,
         requireLocationServicesEnabled: false,
+      )
+      .where(
+        (d) => looksLikeHeartRate(d.name, d.serviceUuids.contains(_hrService)),
       )
       .map(
         (d) => SensorDevice(
           id: d.id,
           name: d.name.isEmpty ? 'Heart rate sensor' : d.name,
           rssi: d.rssi,
+          advertisesHr: d.serviceUuids.contains(_hrService),
         ),
       );
+
+  @override
+  Future<bool> hasHeartRate(String deviceId) async {
+    try {
+      await _ble.discoverAllServices(deviceId);
+      final services = await _ble.getDiscoveredServices(deviceId);
+      return services.any((s) => s.id == _hrService);
+    } catch (_) {
+      // If discovery itself fails, let the subscription decide.
+      return true;
+    }
+  }
 
   @override
   Stream<LinkState> connect(String deviceId) => _ble
@@ -218,6 +261,9 @@ class SimulatedHeartSensor implements HeartSensor {
     );
     return ctl.stream;
   }
+
+  @override
+  Future<bool> hasHeartRate(String deviceId) async => true;
 
   @override
   Stream<HrReading> readings(String deviceId) async* {
