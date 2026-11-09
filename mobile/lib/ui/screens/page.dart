@@ -72,6 +72,7 @@ class TabHeader extends StatelessWidget {
             label: 'Refresh',
             spinning: s.loading,
             onTap: s.reload,
+            round: true,
           ),
       ],
     );

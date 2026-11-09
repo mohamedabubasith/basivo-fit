@@ -114,38 +114,47 @@ class IconBtn extends StatelessWidget {
     required this.label,
     this.onTap,
     this.spinning = false,
+    this.round = false,
   });
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
   final bool spinning;
+
+  /// Round, screen-scaled style that matches [ThemeToggle] in page headers.
+  final bool round;
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final enabled = onTap != null;
+    final d = round
+        ? (MediaQuery.sizeOf(context).width * 0.095).clamp(34.0, 40.0)
+        : 48.0;
     return Tooltip(
       message: label,
       child: Pressable(
         onTap: onTap,
         semanticLabel: label,
-        borderRadius: 14,
+        borderRadius: round ? d / 2 : 14,
         child: AnimatedOpacity(
           duration: Motion.base,
           opacity: enabled ? 1 : 0.35,
           child: Container(
-            width: 48,
-            height: 48,
+            width: d,
+            height: d,
+            margin: EdgeInsets.all(d < 44 ? (44 - d) / 2 : 0),
             decoration: BoxDecoration(
               color: c.card,
-              borderRadius: BorderRadius.circular(14),
+              shape: round ? BoxShape.circle : BoxShape.rectangle,
+              borderRadius: round ? null : BorderRadius.circular(14),
               border: Border.all(color: c.border),
-              boxShadow: c.shadow,
+              boxShadow: round ? null : c.shadow,
             ),
             child: Center(
               child: _Spin(
                 spinning: spinning,
                 child: ExcludeSemantics(
-                  child: Icon(icon, size: 20, color: c.fg),
+                  child: Icon(icon, size: round ? d * 0.46 : 20, color: c.fg),
                 ),
               ),
             ),
@@ -198,6 +207,8 @@ class ThemeToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final next = dark ? 'light' : 'dark';
+    // Scales with the screen: 34dp on small phones up to 40dp on large ones.
+    final d = (MediaQuery.sizeOf(context).width * 0.095).clamp(34.0, 40.0);
     return Builder(
       builder: (btn) {
         return Tooltip(
@@ -214,13 +225,14 @@ class ThemeToggle extends StatelessWidget {
               reveal == null ? change() : reveal.run(origin, change);
             },
             child: Container(
-              width: 48,
-              height: 48,
+              width: d,
+              height: d,
+              // Transparent margin keeps the touch target at 44dp or more.
+              margin: EdgeInsets.all(d < 44 ? (44 - d) / 2 : 0),
               decoration: BoxDecoration(
                 color: context.c.card,
-                borderRadius: BorderRadius.circular(14),
+                shape: BoxShape.circle,
                 border: Border.all(color: context.c.border),
-                boxShadow: context.c.shadow,
               ),
               child: Center(
                 child: AnimatedSwitcher(
@@ -237,7 +249,7 @@ class ThemeToggle extends StatelessWidget {
                     key: ValueKey(dark),
                     child: Icon(
                       dark ? LucideIcons.sun : LucideIcons.moon,
-                      size: 20,
+                      size: d * 0.46,
                       color: context.c.fg,
                     ),
                   ),
@@ -265,31 +277,28 @@ class PageHeader extends StatelessWidget {
   final List<Widget> actions;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: Space.s2),
-    child: Row(
+    padding: const EdgeInsets.only(top: Space.s1),
+    child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Semantics(
+        Row(
+          children: [
+            Expanded(
+              child: Semantics(
                 header: true,
                 child: Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
               ),
-              if (subtitle != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: Space.s1),
-                  child: subtitle,
-                ),
-            ],
-          ),
+            ),
+            for (final a in actions) ...[a, const SizedBox(width: Space.s1)],
+            ThemeToggle(controller: theme),
+          ],
         ),
-        for (final a in actions) ...[a, const SizedBox(width: Space.s2)],
-        ThemeToggle(controller: theme),
+        ?subtitle,
       ],
     ),
   );
