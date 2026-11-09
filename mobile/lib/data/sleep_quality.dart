@@ -120,3 +120,140 @@ String dailyTip(Health h) {
   }
   return parts.join(' ');
 }
+
+// ---------------- Easy sleep view ----------------
+
+/// Typical share of sleep for adults (approximate, widely cited ranges).
+enum Level { low, typical, high }
+
+class StageStat {
+  const StageStat(
+    this.stage,
+    this.name,
+    this.minutes,
+    this.pct,
+    this.from,
+    this.to,
+    this.level,
+    this.meaning,
+  );
+  final Stage stage;
+  final String name, meaning;
+  final int minutes;
+  final double pct, from, to;
+  final Level level;
+}
+
+/// Each stage as minutes, share of the night, typical range and a plain meaning.
+/// Deep, light and REM are shares of sleep; awake is a share of time in bed.
+List<StageStat> stageStats(SleepNight n) {
+  final asleep = n.minutes <= 0 ? 1 : n.minutes;
+  final inBed = n.minutes + n.awake <= 0 ? 1 : n.minutes + n.awake;
+  StageStat s(
+    Stage st,
+    String name,
+    int m,
+    int of,
+    double from,
+    double to,
+    String meaning,
+  ) {
+    final pct = m / of * 100;
+    final level = pct < from
+        ? Level.low
+        : (pct > to ? Level.high : Level.typical);
+    return StageStat(st, name, m, pct, from, to, level, meaning);
+  }
+
+  return [
+    s(Stage.deep, 'Deep', n.deep, asleep, 13, 23, 'Body recovery and repair.'),
+    s(Stage.rem, 'REM', n.rem, asleep, 20, 25, 'Dreaming, memory and mood.'),
+    s(
+      Stage.light,
+      'Light',
+      n.light,
+      asleep,
+      45,
+      60,
+      'Most of the night. Links the other stages.',
+    ),
+    s(
+      Stage.awake,
+      'Awake',
+      n.awake,
+      inBed,
+      0,
+      10,
+      'Short wake-ups are normal.',
+    ),
+  ];
+}
+
+/// One short, plain sentence about the night.
+String sleepVerdict(SleepNight n) {
+  final h = n.minutes / 60;
+  final length = h < 6
+      ? 'Short night'
+      : h < 7
+      ? 'A little short'
+      : h <= 9
+      ? 'Good length'
+      : 'Long night';
+  final st = {for (final x in stageStats(n)) x.stage: x};
+  final good = <String>[], low = <String>[];
+  for (final k in [Stage.deep, Stage.rem]) {
+    final x = st[k]!;
+    (x.level == Level.low ? low : good).add(
+      x.name == 'REM' ? 'REM' : 'deep sleep',
+    );
+  }
+  final awake = st[Stage.awake]!;
+  final parts = <String>['$length.'];
+  if (good.isNotEmpty && low.isEmpty) {
+    parts.add('You got enough ${good.join(' and ')}.');
+  } else if (good.isNotEmpty) {
+    parts.add(
+      '${_cap(good.join(' and '))} was good, but ${low.join(' and ')} was low.',
+    );
+  } else {
+    parts.add('Deep sleep and REM were both low.');
+  }
+  if (awake.level == Level.high) parts.add('You were awake quite a bit.');
+  if (h < 7) parts.add('Aim for 7 hours or more.');
+  return parts.join(' ');
+}
+
+String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+class SleepCheck {
+  const SleepCheck(this.ok, this.title, this.detail);
+  final bool ok;
+  final String title, detail;
+}
+
+/// Three simple checks, phrased as outcomes instead of gauges.
+List<SleepCheck> sleepChecks(SleepNight n) {
+  final rows = sleepQuality(n);
+  final toSound = rows[0], restless = rows[2], breaks = rows[3];
+  return [
+    SleepCheck(
+      toSound.status != QStatus.high,
+      toSound.status == QStatus.none
+          ? 'No deep or REM sleep recorded'
+          : 'Reached deep sleep in ${toSound.value}',
+      'Under 30 minutes is typical.',
+    ),
+    SleepCheck(
+      breaks.status == QStatus.ok,
+      breaks.value.startsWith('0 min')
+          ? 'No long wake-ups'
+          : 'Woke up for ${breaks.value}',
+      'Wake-ups of 5 minutes or more. Under 10 minutes in total is typical.',
+    ),
+    SleepCheck(
+      restless.status == QStatus.ok,
+      'Restless for ${restless.value}',
+      'Tossing and turning you probably do not remember. Under 15 minutes is typical.',
+    ),
+  ];
+}

@@ -161,7 +161,7 @@ void main() {
 
         for (final (tab, expectText) in [
           ('Heart tab', 'Time in heart-rate zones'),
-          ('Sleep tab', 'Sleep quality'),
+          ('Sleep tab', 'Your week'),
           ('Activity tab', 'Steps by hour'),
           ('Profile tab', 'Appearance'),
         ]) {

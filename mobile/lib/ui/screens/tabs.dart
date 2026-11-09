@@ -3,7 +3,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../data/demo.dart';
 import '../../data/format.dart';
 import '../../data/models.dart';
-import '../../data/sleep_quality.dart';
 import '../../state/health_store.dart';
 import '../../state/settings.dart';
 import '../../theme/app_theme.dart';
@@ -14,6 +13,7 @@ import '../widgets/motion.dart';
 import '../widgets/sections.dart';
 import 'live.dart';
 import 'page.dart';
+import 'sleep_page.dart';
 
 List<Widget> _loading(String title, ThemeController theme) => [
   TabHeader(title: title, theme: theme),
@@ -443,63 +443,11 @@ class SleepTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = StoreScope.of(context), h = s.health;
     if (h == null) return TabPage(children: _loading('Sleep', theme));
-    final c = context.c;
     return TabPage(
       onRefresh: s.reload,
       children: [
         TabHeader(title: 'Sleep', theme: theme),
-        SleepDetail(h: h),
-        SleepSummaryCard(h: h, full: true),
-        AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const CardTitle('About sleep stages'),
-              const SizedBox(height: Space.s3),
-              for (final (name, text, color) in [
-                ('Deep', 'sleep helps your body recover.', c.sDeep),
-                ('Light', 'sleep is most of the night.', c.sLight),
-                ('REM', 'sleep is when you dream and helps memory.', c.sRem),
-                ('Awake', 'short wake-ups are normal.', c.sAwake),
-              ])
-                Padding(
-                  padding: const EdgeInsets.only(bottom: Space.s2),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: Space.s3),
-                      Expanded(
-                        child: Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              TextSpan(text: ' $text'),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
+        SleepView(h: h),
         if (h.spo2 != null)
           AppCard(
             child: Column(
@@ -514,156 +462,6 @@ class SleepTab extends StatelessWidget {
               ],
             ),
           ),
-      ],
-    );
-  }
-}
-
-class SleepDetail extends StatefulWidget {
-  const SleepDetail({super.key, required this.h});
-  final Health h;
-  @override
-  State<SleepDetail> createState() => _SleepDetailState();
-}
-
-class _SleepDetailState extends State<SleepDetail> {
-  int? _i;
-  @override
-  Widget build(BuildContext context) {
-    final nights = widget.h.sleep
-        .where((n) => !n.isNap && n.stages.isNotEmpty)
-        .toList();
-    if (nights.isEmpty) return const SizedBox.shrink();
-    final i = (_i ?? nights.length - 1).clamp(0, nights.length - 1);
-    final n = nights[i];
-    final c = context.c;
-    final tags = {
-      QStatus.ok: ('In range', c.up, c.upBg),
-      QStatus.high: ('Above range', c.warn, c.warnBg),
-      QStatus.low: ('Below range', c.warn, c.warnBg),
-      QStatus.none: ('No data', c.mutedFg, c.track),
-    };
-    return Column(
-      children: [
-        AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: Motion.base,
-                      child: Column(
-                        key: ValueKey(i),
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            i == nights.length - 1
-                                ? 'Last night'
-                                : longDate(n.end),
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          Muted(
-                            '${dur(n.minutes)} asleep · ${dur(n.end.difference(n.start).inMinutes)} in bed',
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  IconBtn(
-                    icon: LucideIcons.chevronLeft,
-                    label: 'Earlier night',
-                    onTap: i <= 0 ? null : () => setState(() => _i = i - 1),
-                  ),
-                  const SizedBox(width: Space.s2),
-                  IconBtn(
-                    icon: LucideIcons.chevronRight,
-                    label: 'Later night',
-                    onTap: i >= nights.length - 1
-                        ? null
-                        : () => setState(() => _i = i + 1),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Space.s4),
-              AnimatedSwitcher(
-                duration: Motion.slow,
-                child: KeyedSubtree(
-                  key: ValueKey(i),
-                  child: Hypnogram(night: n),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: Space.s4),
-        AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const CardTitle('Sleep quality'),
-              const SizedBox(height: Space.s4),
-              for (final q in sleepQuality(n)) ...[
-                MergeSemantics(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text.rich(
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: q.label,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: ' · ${q.value}',
-                                    style: TextStyle(color: c.mutedFg),
-                                  ),
-                                ],
-                              ),
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                          ),
-                          const SizedBox(width: Space.s2),
-                          Pill(
-                            tags[q.status]!.$1,
-                            fg: tags[q.status]!.$2,
-                            bg: tags[q.status]!.$3,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: Space.s2),
-                      QualityBar(
-                        key: ValueKey('$i-${q.label}'),
-                        pos: q.pos,
-                        bandFrom: q.bandFrom,
-                        bandTo: q.bandTo,
-                        color: q.status == QStatus.ok
-                            ? c.up
-                            : q.status == QStatus.none
-                            ? Colors.transparent
-                            : c.warn,
-                      ),
-                      const SizedBox(height: Space.s2),
-                      Muted(q.why, size: 12),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: Space.s4),
-              ],
-              const Muted(
-                'The dashed box is the typical range. These are simple, open rules worked out from your sleep stages. Google\'s own sleep score uses a private formula that it does not share.',
-                size: 12,
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
