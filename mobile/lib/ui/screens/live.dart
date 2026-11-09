@@ -35,7 +35,7 @@ class LiveHeartCard extends StatelessWidget {
       LivePhase.needsPermission => _Message(
         icon: LucideIcons.bluetoothOff,
         text:
-            'PulseFolio needs Bluetooth permission to find heart rate sensors near you.',
+            'Basivo Fit needs Bluetooth permission to find heart rate sensors near you.',
         actions: [
           AppButton(
             label: 'Allow Bluetooth',
@@ -161,7 +161,7 @@ class _Help extends StatelessWidget {
         children: const [
           Muted(
             'Any device that sends heart rate in the standard Bluetooth format works, for example most chest straps and arm bands, and many watches with a "broadcast heart rate" or "heart rate on equipment" setting.\n\n'
-            'Fitbit bands such as the Fitbit Air only share heart rate with the Google Health app, so they do not show up here. For those, PulseFolio shows the latest reading from Google instead, usually a few minutes old.',
+            'Fitbit bands such as the Fitbit Air only share heart rate with the Google Health app, so they do not show up here. For those, Basivo Fit shows the latest reading from Google instead, usually a few minutes old.',
             size: 13,
           ),
         ],

@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
 
 /// Frosted tab bar with a gradient indicator that slides to the selected tab.
@@ -49,9 +50,7 @@ class BottomNav extends StatelessWidget {
                           height: 3,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(3),
-                            gradient: LinearGradient(
-                              colors: [c.secondary, c.accent],
-                            ),
+                            gradient: c.brand,
                           ),
                         ),
                       ),
@@ -104,7 +103,7 @@ class BottomNav extends StatelessWidget {
                                         AnimatedDefaultTextStyle(
                                           duration: Motion.base,
                                           style: TextStyle(
-                                            fontFamily: 'FiraSans',
+                                            fontFamily: kSans,
                                             fontSize: 12,
                                             fontWeight: FontWeight.w500,
                                             color: i == index

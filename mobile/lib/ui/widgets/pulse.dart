@@ -209,7 +209,8 @@ class _EcgPainter extends CustomPainter {
   bool shouldRepaint(_EcgPainter old) => old.color != color;
 }
 
-/// The PulseFolio logo: gradient tile, soft heart, pulse line and a green live dot.
+/// The Basivo Fit mark: a volt (lime to teal) tile with a bold lowercase "b"
+/// whose bowl carries a heartbeat. Matches assets/brand/logo.svg and the app icon.
 class AppLogo extends StatelessWidget {
   const AppLogo({super.key, this.size = 88});
   final double size;
@@ -222,52 +223,40 @@ class AppLogo extends StatelessWidget {
 class _LogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final s = size.width / 512;
-    canvas.scale(s);
-    final r = RRect.fromRectAndRadius(
-      const Rect.fromLTWH(0, 0, 512, 512),
-      const Radius.circular(112),
-    );
+    canvas.scale(size.width / 512);
     canvas.drawRRect(
-      r,
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(0, 0, 512, 512),
+        const Radius.circular(116),
+      ),
       Paint()
         ..shader = ui.Gradient.linear(
           Offset.zero,
           const Offset(512, 512),
-          const [Color(0xFF2563EB), Color(0xFF7C3AED)],
+          const [Color(0xFFDDFB62), Color(0xFF2FD9B9)],
         ),
     );
-    final heart = Path()
-      ..moveTo(256, 412)
-      ..cubicTo(150, 340, 92, 284, 92, 206)
-      ..cubicTo(92, 152, 134, 112, 186, 112)
-      ..cubicTo(218, 112, 242, 128, 256, 152)
-      ..cubicTo(270, 128, 294, 112, 326, 112)
-      ..cubicTo(378, 112, 420, 152, 420, 206)
-      ..cubicTo(420, 284, 362, 340, 256, 412)
-      ..close();
-    canvas.drawPath(heart, Paint()..color = const Color(0x29FFFFFF));
-    final pulse = Path()
-      ..moveTo(112, 262)
-      ..lineTo(188, 262)
-      ..lineTo(214, 214)
-      ..lineTo(250, 316)
-      ..lineTo(284, 236)
-      ..lineTo(306, 262)
-      ..lineTo(400, 262);
-    canvas.drawPath(
-      pulse,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 30
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..color = Colors.white,
+    final ink = Paint()
+      ..style = PaintingStyle.stroke
+      ..color = const Color(0xFF07080C)
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawLine(
+      const Offset(164, 112),
+      const Offset(164, 312),
+      ink..strokeWidth = 52,
     );
-    canvas.drawCircle(
-      const Offset(400, 262),
-      24,
-      Paint()..color = const Color(0xFF34D399),
+    canvas.drawCircle(const Offset(262, 312), 98, ink);
+    canvas.drawPath(
+      Path()
+        ..moveTo(196, 312)
+        ..lineTo(222, 312)
+        ..lineTo(240, 276)
+        ..lineTo(266, 352)
+        ..lineTo(286, 300)
+        ..lineTo(298, 312)
+        ..lineTo(328, 312),
+      ink..strokeWidth = 22,
     );
   }
 

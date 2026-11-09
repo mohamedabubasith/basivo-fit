@@ -2,10 +2,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'tokens.dart';
 
-const kSans = 'FiraSans';
-const kMono = 'FiraCode';
+const kSans = 'Manrope';
 
-/// Monospace numbers (Fira Code, weight 500, tabular figures) used for every metric.
+/// Display face for headings and every metric (tabular figures).
+const kMono = 'SpaceGrotesk';
+const kDisplay = kMono;
+
+/// Metric numbers (Space Grotesk with tabular figures) used for every value.
 TextStyle mono(
   BuildContext context, {
   double size = 15,
@@ -15,11 +18,12 @@ TextStyle mono(
   fontFamily: kMono,
   fontSize: size,
   color: color ?? context.c.fg,
-  fontWeight: weight,
-  fontVariations: [FontVariation.weight(weight.value.toDouble())],
+  fontWeight: weight == FontWeight.w500 && size >= 22
+      ? FontWeight.w600
+      : weight,
   fontFeatures: const [FontFeature.tabularFigures()],
-  height: 1.15,
-  letterSpacing: size >= 26 ? -0.5 : 0,
+  height: 1.1,
+  letterSpacing: size >= 26 ? -1.0 : (size >= 18 ? -0.3 : 0),
 );
 
 ThemeData buildTheme(Brightness b) {
@@ -34,7 +38,9 @@ ThemeData buildTheme(Brightness b) {
       brightness: b,
       surface: c.card,
       primary: c.secondary,
+      onPrimary: b == Brightness.dark ? c.onBrand : Colors.white,
     ),
+    textSelectionTheme: TextSelectionThemeData(cursorColor: c.secondary),
     splashFactory: InkSparkle.splashFactory,
     extensions: [c],
   );
@@ -46,14 +52,16 @@ ThemeData buildTheme(Brightness b) {
   return base.copyWith(
     textTheme: t.copyWith(
       headlineMedium: t.headlineMedium?.copyWith(
-        fontSize: 28,
+        fontFamily: kDisplay,
+        fontSize: 30,
         fontWeight: FontWeight.w600,
-        height: 1.15,
-        letterSpacing: -0.3,
+        height: 1.1,
+        letterSpacing: -0.9,
       ),
       titleMedium: t.titleMedium?.copyWith(
-        fontSize: 17,
-        fontWeight: FontWeight.w600,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.2,
       ),
       bodyLarge: t.bodyLarge?.copyWith(fontSize: 16, height: 1.5),
       bodyMedium: t.bodyMedium?.copyWith(fontSize: 14, height: 1.45),

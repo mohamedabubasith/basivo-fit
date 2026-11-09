@@ -88,7 +88,7 @@ class HealthStore extends ChangeNotifier with WidgetsBindingObserver {
       if (switching) _toLogin();
     } on MissingPermission {
       _toLogin(
-        'PulseFolio needs all the health permissions. Please sign in again and tick every box.',
+        'Basivo Fit needs all the health permissions. Please sign in again and tick every box.',
       );
     } catch (e) {
       _toLogin('Sign-in did not finish: ${_describe(e)}');

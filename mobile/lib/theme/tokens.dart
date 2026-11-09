@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Semantic colour tokens, matched to the PulseFolio web app (styles.css).
+/// Semantic colour tokens for Basivo Fit: ink background, volt (lime to teal) brand.
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
   const AppColors({
@@ -37,6 +37,9 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.sRem,
     required this.sLight,
     required this.sDeep,
+    required this.brandA,
+    required this.brandB,
+    required this.onBrand,
     required this.shadow,
   });
 
@@ -66,33 +69,42 @@ class AppColors extends ThemeExtension<AppColors> {
       navBg;
   final Color zLight, zModerate, zVigorous, zPeak;
   final Color sAwake, sRestless, sRem, sLight, sDeep;
+
+  /// Brand gradient (start, end) and the text colour that sits on it.
+  final Color brandA, brandB, onBrand;
   final List<BoxShadow> shadow;
 
+  LinearGradient get brand => LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [brandA, brandB],
+  );
+
   static const dark = AppColors(
-    bg: Color(0xFF0B1220),
-    glow1: Color(0x382563EB),
-    glow2: Color(0x297C3AED),
-    card: Color(0xFF141C2E),
-    card2: Color(0xFF1B2540),
-    muted: Color(0xFF0E1628),
-    fg: Color(0xFFF8FAFC),
-    mutedFg: Color(0xFF9AA8BD),
-    border: Color(0x14FFFFFF),
-    borderStrong: Color(0x29FFFFFF),
-    track: Color(0x2E94A3B8),
-    primary: Color(0xFF2563EB),
-    secondary: Color(0xFF3B82F6),
-    accent: Color(0xFF7C3AED),
-    link: Color(0xFF7AB2FF),
-    up: Color(0xFF10B981),
-    upBg: Color(0x2610B981),
-    down: Color(0xFFF87171),
-    downBg: Color(0x2BDC2626),
+    bg: Color(0xFF07080C),
+    glow1: Color(0x24C6F24E),
+    glow2: Color(0x1F2FD9B9),
+    card: Color(0xFF111319),
+    card2: Color(0xFF191C24),
+    muted: Color(0xFF0C0E13),
+    fg: Color(0xFFF3F5F7),
+    mutedFg: Color(0xFF969DAA),
+    border: Color(0x12FFFFFF),
+    borderStrong: Color(0x26FFFFFF),
+    track: Color(0x26A1A8B5),
+    primary: Color(0xFFC6F24E),
+    secondary: Color(0xFFC6F24E),
+    accent: Color(0xFF8B7CFF),
+    link: Color(0xFFC6F24E),
+    up: Color(0xFF34D399),
+    upBg: Color(0x2634D399),
+    down: Color(0xFFFF6B6B),
+    downBg: Color(0x29FF6B6B),
     warn: Color(0xFFFBBF24),
-    warnBg: Color(0x26FBBF24),
-    heart: Color(0xFFFB7185),
-    heartBg: Color(0x24FB7185),
-    navBg: Color(0xC70B1220),
+    warnBg: Color(0x24FBBF24),
+    heart: Color(0xFFFF5C7A),
+    heartBg: Color(0x24FF5C7A),
+    navBg: Color(0xD907080C),
     zLight: Color(0xFF4FC3F7),
     zModerate: Color(0xFF4ADE80),
     zVigorous: Color(0xFFFACC15),
@@ -101,33 +113,36 @@ class AppColors extends ThemeExtension<AppColors> {
     sRestless: Color(0xFFF5B942),
     sRem: Color(0xFFBAE6FD),
     sLight: Color(0xFF93B4F8),
-    sDeep: Color(0xFF8B5CD6),
+    sDeep: Color(0xFF8B7CFF),
+    brandA: Color(0xFFDDFB62),
+    brandB: Color(0xFF2FD9B9),
+    onBrand: Color(0xFF07080C),
     shadow: [
       BoxShadow(
-        color: Color(0x99000000),
-        blurRadius: 30,
-        offset: Offset(0, 10),
-        spreadRadius: -12,
+        color: Color(0x80000000),
+        blurRadius: 24,
+        offset: Offset(0, 12),
+        spreadRadius: -14,
       ),
     ],
   );
 
   static const light = AppColors(
-    bg: Color(0xFFF6F8FC),
-    glow1: Color(0x1A2563EB),
-    glow2: Color(0x147C3AED),
+    bg: Color(0xFFF3F4EF),
+    glow1: Color(0x2EB5E43A),
+    glow2: Color(0x1F2FD9B9),
     card: Color(0xFFFFFFFF),
-    card2: Color(0xFFEEF2F8),
-    muted: Color(0xFFF1F4F9),
-    fg: Color(0xFF0F172A),
-    mutedFg: Color(0xFF4B5568),
-    border: Color(0x140F172A),
-    borderStrong: Color(0x2E0F172A),
-    track: Color(0x29647488),
-    primary: Color(0xFF1D4ED8),
-    secondary: Color(0xFF2563EB),
-    accent: Color(0xFF6D28D9),
-    link: Color(0xFF1D4ED8),
+    card2: Color(0xFFEDEFE7),
+    muted: Color(0xFFF0F2EC),
+    fg: Color(0xFF0B0D12),
+    mutedFg: Color(0xFF4F5562),
+    border: Color(0x140B0D12),
+    borderStrong: Color(0x2E0B0D12),
+    track: Color(0x24646C78),
+    primary: Color(0xFF4D7C0F),
+    secondary: Color(0xFF4D7C0F),
+    accent: Color(0xFF5B4BE0),
+    link: Color(0xFF3F6212),
     up: Color(0xFF047857),
     upBg: Color(0x1F059669),
     down: Color(0xFFDC2626),
@@ -136,7 +151,7 @@ class AppColors extends ThemeExtension<AppColors> {
     warnBg: Color(0x1FD97706),
     heart: Color(0xFFE11D48),
     heartBg: Color(0x1AE11D48),
-    navBg: Color(0xD1FFFFFF),
+    navBg: Color(0xE6FFFFFF),
     zLight: Color(0xFF0284C7),
     zModerate: Color(0xFF16A34A),
     zVigorous: Color(0xFFCA8A04),
@@ -145,12 +160,15 @@ class AppColors extends ThemeExtension<AppColors> {
     sRestless: Color(0xFFD99511),
     sRem: Color(0xFF38BDF8),
     sLight: Color(0xFF5B83E8),
-    sDeep: Color(0xFF6D3FC0),
+    sDeep: Color(0xFF5B4BE0),
+    brandA: Color(0xFFC9F23F),
+    brandB: Color(0xFF26CDAE),
+    onBrand: Color(0xFF07080C),
     shadow: [
       BoxShadow(
-        color: Color(0x2E0F172A),
-        blurRadius: 28,
-        offset: Offset(0, 12),
+        color: Color(0x1F0B0D12),
+        blurRadius: 24,
+        offset: Offset(0, 10),
         spreadRadius: -14,
       ),
     ],
@@ -197,6 +215,9 @@ class AppColors extends ThemeExtension<AppColors> {
       sRem: l(sRem, other.sRem),
       sLight: l(sLight, other.sLight),
       sDeep: l(sDeep, other.sDeep),
+      brandA: l(brandA, other.brandA),
+      brandB: l(brandB, other.brandB),
+      onBrand: l(onBrand, other.onBrand),
       shadow: t < 0.5 ? shadow : other.shadow,
     );
   }
@@ -208,7 +229,7 @@ abstract final class Space {
 }
 
 abstract final class Radii {
-  static const card = 18.0, sm = 12.0, pill = 999.0;
+  static const card = 22.0, sm = 14.0, pill = 999.0;
 }
 
 abstract final class Motion {

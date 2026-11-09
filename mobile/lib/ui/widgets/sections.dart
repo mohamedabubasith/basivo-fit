@@ -26,8 +26,12 @@ class TipCard extends StatelessWidget {
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        stops: const [0, 0.7],
-        colors: [c.accent.withValues(alpha: 0.16), c.card],
+        stops: const [0, 0.45, 1],
+        colors: [
+          c.brandA.withValues(alpha: 0.16),
+          c.brandB.withValues(alpha: 0.06),
+          c.card,
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

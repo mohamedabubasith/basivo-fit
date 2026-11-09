@@ -81,11 +81,8 @@ Future<void> pumpApp(
 }
 
 Future<void> tapDemo(WidgetTester tester) async {
-  await tester.scrollUntilVisible(
-    find.text('Try the demo'),
-    200,
-    scrollable: find.byType(Scrollable).first,
-  );
+  // The login screen is a single fixed screen: the demo button is always visible.
+  expect(find.byType(Scrollable), findsNothing);
   await tester.pump(const Duration(milliseconds: 100));
   await tester.tap(find.text('Try the demo'));
 }
@@ -109,12 +106,12 @@ Future<void> loadFonts() async {
     await l.load();
   }
 
-  await load('FiraSans', [
-    'FiraSans-Regular.ttf',
-    'FiraSans-Medium.ttf',
-    'FiraSans-SemiBold.ttf',
+  await load('Manrope', [
+    for (final w in [400, 500, 600, 700, 800]) 'Manrope-$w.ttf',
   ]);
-  await load('FiraCode', ['FiraCode.ttf']);
+  await load('SpaceGrotesk', [
+    for (final w in [400, 500, 600, 700]) 'SpaceGrotesk-$w.ttf',
+  ]);
 }
 
 void main() {
@@ -123,10 +120,27 @@ void main() {
     tester,
   ) async {
     await pumpApp(tester, HealthStore(auth: FakeAuth()));
-    expect(find.text('PulseFolio'), findsOneWidget);
+    expect(find.text('Basivo Fit'), findsOneWidget);
     expect(find.text('Sign in with Google'), findsOneWidget);
     expect(find.text('Try the demo'), findsOneWidget);
   });
+
+  for (final size in const [Size(320, 568), Size(360, 640), Size(430, 932)]) {
+    testWidgets(
+      'login fits one screen without scrolling at ${size.width.toInt()}x${size.height.toInt()}',
+      (tester) async {
+        final store = HealthStore(auth: FakeAuth());
+        await pumpApp(tester, store, size: size);
+        await settle(tester);
+        expect(tester.takeException(), isNull);
+        expect(find.byType(Scrollable), findsNothing);
+        for (final t in ['Sign in with Google', 'Try the demo', 'Privacy']) {
+          final r = tester.getRect(find.text(t));
+          expect(r.bottom <= size.height, isTrue, reason: '$t is on screen');
+        }
+      },
+    );
+  }
 
   for (final size in const [Size(390, 844), Size(320, 640), Size(820, 1180)]) {
     testWidgets(

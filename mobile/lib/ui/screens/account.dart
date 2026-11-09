@@ -43,215 +43,314 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     final s = StoreScope.of(context), c = context.c;
     final pad = MediaQuery.paddingOf(context);
-    final items = <Widget>[
-      Align(
-        alignment: Alignment.centerRight,
-        child: ThemeToggle(controller: widget.theme),
-      ),
-      Column(
-        children: [
-          AnimatedBuilder(
-            animation: _float,
-            builder: (_, child) => Transform.translate(
-              offset: Offset(0, -6 * Curves.easeInOut.transform(_float.value)),
-              child: child,
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0xB34F46E5),
-                    blurRadius: 40,
-                    offset: Offset(0, 18),
-                    spreadRadius: -16,
-                  ),
-                ],
-              ),
-              child: const AppLogo(size: 88),
-            ),
-          ),
-          const SizedBox(height: Space.s3),
-          ShaderMask(
-            shaderCallback: (r) =>
-                LinearGradient(colors: [c.secondary, c.accent]).createShader(r),
-            child: Semantics(
-              header: true,
-              child: const Text(
-                'PulseFolio',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.8,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: Space.s1),
-          const Muted('Your Fitbit health, beautifully clear.', size: 16),
-          const SizedBox(height: Space.s3),
-          const Row(
-            children: [
-              BeatingHeart(bpm: 72, size: 30),
-              SizedBox(width: Space.s3),
-              Expanded(child: EcgLine(bpm: 72)),
-            ],
-          ),
-        ],
-      ),
-      _feature(
-        context,
-        LucideIcons.heartPulse,
-        c.heart,
-        c.heartBg,
-        'Live heart rate',
-        'Hour by hour, zones, resting heart rate and HRV',
-      ),
-      _feature(
-        context,
-        LucideIcons.bedDouble,
-        Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFFA78BFA)
-            : const Color(0xFF8B5CF6),
-        c.accent.withValues(alpha: 0.14),
-        'Sleep stages',
-        'Deep, light and REM sleep with open quality rules',
-      ),
-      _feature(
-        context,
-        LucideIcons.footprints,
-        c.up,
-        c.upBg,
-        'Activity',
-        'Steps, distance, calories and zone minutes',
-      ),
-      if (s.loginMessage != null)
-        Container(
-          padding: const EdgeInsets.all(Space.s3),
-          decoration: BoxDecoration(
-            color: c.warnBg,
-            borderRadius: BorderRadius.circular(Radii.sm),
-          ),
-          child: Semantics(
-            liveRegion: true,
-            child: Text(s.loginMessage!, style: const TextStyle(fontSize: 14)),
-          ),
-        ),
-      Column(
-        children: [
-          if (s.auth.supported)
-            GoogleButton(
-              onTap: _busy
-                  ? null
-                  : () async {
-                      setState(() => _busy = true);
-                      await s.signIn();
-                      if (mounted) setState(() => _busy = false);
-                    },
-            )
-          else
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(Space.s3),
-              decoration: BoxDecoration(
-                color: c.warnBg,
-                borderRadius: BorderRadius.circular(Radii.sm),
-              ),
-              child: const Text(
-                'Google sign-in works in the Android and iPhone app. You can try the demo here.',
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
-          const SizedBox(height: Space.s3),
-          AppButton(label: 'Try the demo', onTap: s.startDemo),
-          const SizedBox(height: Space.s3),
-          const Muted(
-            'Use the Google account linked to your Fitbit or Pixel Watch. Your data goes straight from Google to this phone and is never stored on our servers.',
-            size: 12,
-            align: TextAlign.center,
-          ),
-          TextButton(
-            onPressed: () =>
-                Navigator.of(context).push(_route(const PrivacyScreen())),
-            child: Text(
-              'Privacy',
-              style: TextStyle(
-                color: c.link,
-                decoration: TextDecoration.underline,
-                decorationColor: c.link,
-              ),
-            ),
-          ),
-        ],
-      ),
-    ];
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: GlowBackground(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: ListView.separated(
-              padding: EdgeInsets.fromLTRB(
-                Space.s5,
-                pad.top + Space.s4,
-                Space.s5,
-                pad.bottom + Space.s5,
+        child: LayoutBuilder(
+          builder: (context, box) {
+            // One fixed screen: sizes step down on shorter phones so nothing scrolls.
+            final h = box.maxHeight - pad.top - pad.bottom;
+            final compact = h < 720, tiny = h < 600;
+            final logo = tiny ? 64.0 : (compact ? 80.0 : 104.0);
+            final title = tiny ? 30.0 : (compact ? 36.0 : 42.0);
+            final gap = tiny ? Space.s3 : (compact ? Space.s4 : Space.s5);
+            var i = 0;
+            Widget enter(Widget w) => Entrance(index: i++, child: w);
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    Space.s5,
+                    pad.top + Space.s2,
+                    Space.s5,
+                    pad.bottom + Space.s4,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      enter(
+                        Row(
+                          children: [
+                            const AppLogo(size: 28),
+                            const SizedBox(width: Space.s2),
+                            const Text(
+                              'Basivo Fit',
+                              style: TextStyle(
+                                fontFamily: kDisplay,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                            const Spacer(),
+                            ThemeToggle(controller: widget.theme),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: SizedBox(
+                            width:
+                                (box.maxWidth < 460 ? box.maxWidth : 460) -
+                                Space.s5 * 2,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                enter(
+                                  AnimatedBuilder(
+                                    animation: _float,
+                                    builder: (_, child) => Transform.translate(
+                                      offset: Offset(
+                                        0,
+                                        -6 *
+                                            Curves.easeInOut.transform(
+                                              _float.value,
+                                            ),
+                                      ),
+                                      child: child,
+                                    ),
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          logo * 0.23,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: c.brandB.withValues(
+                                              alpha: dark ? 0.35 : 0.3,
+                                            ),
+                                            blurRadius: 44,
+                                            offset: const Offset(0, 18),
+                                            spreadRadius: -14,
+                                          ),
+                                        ],
+                                      ),
+                                      child: AppLogo(size: logo),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: gap),
+                                enter(
+                                  Semantics(
+                                    header: true,
+                                    child: Text.rich(
+                                      TextSpan(
+                                        children: [
+                                          const TextSpan(
+                                            text: 'Your health,\n',
+                                          ),
+                                          WidgetSpan(
+                                            alignment:
+                                                PlaceholderAlignment.baseline,
+                                            baseline: TextBaseline.alphabetic,
+                                            child: ShaderMask(
+                                              shaderCallback: (r) =>
+                                                  LinearGradient(
+                                                    colors: dark
+                                                        ? [c.brandA, c.brandB]
+                                                        : const [
+                                                            Color(0xFF4D8F0A),
+                                                            Color(0xFF0E8F7A),
+                                                          ],
+                                                  ).createShader(r),
+                                              child: Text(
+                                                'in full color.',
+                                                style: _titleStyle(
+                                                  title,
+                                                  Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      style: _titleStyle(title, c.fg),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: Space.s3),
+                                enter(
+                                  const Muted(
+                                    'Heart, sleep and activity from your Fitbit or Pixel Watch, made clear.',
+                                    size: 16,
+                                  ),
+                                ),
+                                SizedBox(height: gap),
+                                enter(
+                                  const Row(
+                                    children: [
+                                      BeatingHeart(bpm: 72, size: 26),
+                                      SizedBox(width: Space.s3),
+                                      Expanded(child: EcgLine(bpm: 72)),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: gap),
+                                enter(
+                                  Wrap(
+                                    spacing: Space.s2,
+                                    runSpacing: Space.s2,
+                                    children: [
+                                      _chip(
+                                        LucideIcons.heartPulse,
+                                        'Heart & HRV',
+                                        c.heart,
+                                      ),
+                                      _chip(
+                                        LucideIcons.moon,
+                                        'Sleep stages',
+                                        c.accent,
+                                      ),
+                                      _chip(
+                                        LucideIcons.footprints,
+                                        'Activity',
+                                        c.up,
+                                      ),
+                                      _chip(
+                                        LucideIcons.bluetooth,
+                                        'Live sensor',
+                                        c.zLight,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (s.loginMessage != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(Space.s3),
+                          decoration: BoxDecoration(
+                            color: c.warnBg,
+                            borderRadius: BorderRadius.circular(Radii.sm),
+                          ),
+                          child: Semantics(
+                            liveRegion: true,
+                            child: Text(
+                              s.loginMessage!,
+                              maxLines: 4,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: Space.s3),
+                      ],
+                      enter(
+                        s.auth.supported
+                            ? GoogleButton(
+                                onTap: _busy
+                                    ? null
+                                    : () async {
+                                        setState(() => _busy = true);
+                                        await s.signIn();
+                                        if (mounted) {
+                                          setState(() => _busy = false);
+                                        }
+                                      },
+                              )
+                            : Container(
+                                padding: const EdgeInsets.all(Space.s3),
+                                decoration: BoxDecoration(
+                                  color: c.warnBg,
+                                  borderRadius: BorderRadius.circular(Radii.sm),
+                                ),
+                                child: const Text(
+                                  'Google sign-in works in the Android and iPhone app. You can try the demo here.',
+                                  style: TextStyle(fontSize: 13),
+                                ),
+                              ),
+                      ),
+                      const SizedBox(height: Space.s3),
+                      enter(
+                        AppButton(label: 'Try the demo', onTap: s.startDemo),
+                      ),
+                      const SizedBox(height: Space.s2),
+                      enter(
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              LucideIcons.shieldCheck,
+                              size: 14,
+                              color: c.mutedFg,
+                            ),
+                            const SizedBox(width: 6),
+                            const Flexible(
+                              child: Muted(
+                                'Read-only. Never stored by us.',
+                                size: 12,
+                              ),
+                            ),
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: Space.s2,
+                                ),
+                                minimumSize: const Size(48, 40),
+                              ),
+                              onPressed: () => Navigator.of(
+                                context,
+                              ).push(_route(const PrivacyScreen())),
+                              child: Text(
+                                'Privacy',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: c.link,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              itemCount: items.length,
-              separatorBuilder: (_, _) => const SizedBox(height: Space.s4),
-              itemBuilder: (_, i) => Entrance(index: i, child: items[i]),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _feature(
-    BuildContext context,
-    IconData icon,
-    Color fg,
-    Color bg,
-    String title,
-    String sub,
-  ) => AppCard(
-    padding: const EdgeInsets.symmetric(
-      horizontal: Space.s4,
-      vertical: Space.s3,
-    ),
-    child: MergeSemantics(
+  TextStyle _titleStyle(double size, Color color) => TextStyle(
+    fontFamily: kDisplay,
+    fontSize: size,
+    height: 1.05,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -size * 0.035,
+    color: color,
+  );
+
+  Widget _chip(IconData icon, String label, Color color) {
+    final c = context.c;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 7, 12, 7),
+      decoration: BoxDecoration(
+        color: c.card.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(Radii.pill),
+        border: Border.all(color: c.border),
+      ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ExcludeSemantics(child: Icon(icon, size: 20, color: fg)),
-          ),
-          const SizedBox(width: Space.s3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-                Muted(sub),
-              ],
-            ),
+          ExcludeSemantics(child: Icon(icon, size: 15, color: color)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
         ],
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// "No device connected", "Permission needed" and loading errors.
@@ -306,7 +405,7 @@ class ProblemScreen extends StatelessWidget {
         'Permission needed',
         [
           const Muted(
-            'PulseFolio needs permission to read your activity, sleep, heart and device data. Please sign in again and tick all the boxes.',
+            'Basivo Fit needs permission to read your activity, sleep, heart and device data. Please sign in again and tick all the boxes.',
             size: 16,
             align: TextAlign.center,
           ),
@@ -448,7 +547,7 @@ class ProfileTab extends StatelessWidget {
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(colors: [c.secondary, c.accent]),
+                  gradient: c.brand,
                 ),
                 child: u?.photoUrl != null
                     ? Image.network(
@@ -597,7 +696,7 @@ class ProfileTab extends StatelessWidget {
                 ),
                 const SizedBox(height: Space.s3),
                 const Muted(
-                  "Signing out also removes PulseFolio's access to your Google Health data.",
+                  "Signing out also removes Basivo Fit's access to your Google Health data.",
                   size: 12,
                 ),
               ],
@@ -630,7 +729,7 @@ class ProfileTab extends StatelessWidget {
           ),
         ),
         const Muted(
-          'PulseFolio 1.0 · Data from Google Health. Not a medical device.',
+          'Basivo Fit 1.0 · Data from Google Health. Not a medical device.',
           size: 12,
           align: TextAlign.center,
         ),
@@ -642,9 +741,9 @@ class ProfileTab extends StatelessWidget {
     child: Text(
       name.isEmpty ? '?' : name[0].toUpperCase(),
       style: const TextStyle(
-        color: Colors.white,
+        color: Color(0xFF07080C),
         fontSize: 22,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w800,
       ),
     ),
   );
@@ -680,24 +779,24 @@ class PrivacyScreen extends StatelessWidget {
     final c = context.c;
     const sections = [
       (
-        'What PulseFolio reads',
-        'When you sign in with Google, you choose to let PulseFolio read your Google Health data: activity and fitness, sleep, health measurements (such as heart rate, oxygen and weight) and your connected devices. Access is read-only. PulseFolio cannot change or delete your data.',
+        'What Basivo Fit reads',
+        'When you sign in with Google, you choose to let Basivo Fit read your Google Health data: activity and fitness, sleep, health measurements (such as heart rate, oxygen and weight) and your connected devices. Access is read-only. Basivo Fit cannot change or delete your data.',
       ),
       (
         'Where your data goes',
-        'Your data goes directly from Google to the PulseFolio app on your device. PulseFolio has no server that receives, stores or shares your health data. Nothing is sold or used for advertising.',
+        'Your data goes directly from Google to the Basivo Fit app on your device. Basivo Fit has no server that receives, stores or shares your health data. Nothing is sold or used for advertising.',
       ),
       (
         'What is saved on your device',
-        'Your Google sign-in is managed by your phone. PulseFolio keeps only your theme choice. Signing out cancels PulseFolio\'s access with Google.',
+        'Your Google sign-in is managed by your phone. Basivo Fit keeps only your theme choice. Signing out cancels Basivo Fit\'s access with Google.',
       ),
       (
         'Google API Services User Data Policy',
-        "PulseFolio's use of information received from Google APIs follows the Google API Services User Data Policy, including the Limited Use requirements.",
+        "Basivo Fit's use of information received from Google APIs follows the Google API Services User Data Policy, including the Limited Use requirements.",
       ),
       (
         'Not medical advice',
-        'PulseFolio shows your data to help you understand it. It is not a medical device and does not diagnose anything. Talk to a doctor about health concerns.',
+        'Basivo Fit shows your data to help you understand it. It is not a medical device and does not diagnose anything. Talk to a doctor about health concerns.',
       ),
       (
         'Contact',

@@ -489,12 +489,7 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final (bg, fg, border, grad) = switch (kind) {
-      BtnKind.primary => (
-        null,
-        Colors.white,
-        null,
-        LinearGradient(colors: [c.secondary, c.accent]),
-      ),
+      BtnKind.primary => (null, c.onBrand, null, c.brand),
       BtnKind.ghost => (Colors.transparent, c.fg, c.borderStrong, null),
       BtnKind.danger => (c.downBg, c.down, null, null),
       BtnKind.text => (Colors.transparent, c.mutedFg, null, null),

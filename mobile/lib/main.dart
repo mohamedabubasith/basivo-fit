@@ -164,7 +164,7 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
     backgroundColor: context.c.bg,
     body: Center(
       child: Semantics(
-        label: 'Loading PulseFolio',
+        label: 'Loading Basivo Fit',
         child: ScaleTransition(
           scale: TweenSequence<double>([
             TweenSequenceItem(tween: Tween(begin: 1, end: 1.12), weight: 20),
