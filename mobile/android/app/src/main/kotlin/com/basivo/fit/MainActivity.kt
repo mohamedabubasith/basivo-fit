@@ -40,6 +40,8 @@ class MainActivity : FlutterActivity() {
                             }
                             result.success(ok)
                         }
+                        // Plain Android pairing, used if the LE request does not take.
+                        "createBondDefault" -> result.success(device.createBond())
                         "removeBond" -> {
                             val m = device.javaClass.getMethod("removeBond")
                             result.success(m.invoke(device) as Boolean)
