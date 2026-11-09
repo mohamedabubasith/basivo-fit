@@ -255,20 +255,31 @@ class BleHeartSensor implements HeartSensor {
         return false;
       }
       logBle('No heart rate yet: asking Android to pair (state $state)');
-      final started = await _native.invokeMethod<bool>('createBond', {
-        'id': deviceId,
-      });
-      logBle(
-        started == true
-            ? 'Pairing started: tap Pair on the popup'
-            : 'Android would not start pairing',
-      );
-      for (var i = 0; i < 30; i++) {
-        await Future<void>.delayed(const Duration(seconds: 1));
-        state = await _native.invokeMethod<int>('bondState', {'id': deviceId});
-        if (state != 11 && i >= 2) break;
+      for (final method in ['createBond', 'createBondDefault']) {
+        final started = await _native.invokeMethod<bool>(method, {
+          'id': deviceId,
+        });
+        logBle(
+          '${method == 'createBond' ? 'LE pairing' : 'Standard pairing'}: '
+          '${started == true ? 'started, tap Pair if asked' : 'Android refused to start'}',
+        );
+        var last = state;
+        for (var i = 0; i < 25; i++) {
+          await Future<void>.delayed(const Duration(seconds: 1));
+          state = await _native.invokeMethod<int>('bondState', {
+            'id': deviceId,
+          });
+          if (state != last) {
+            logBle('Pairing state ${_bondName(state)} after ${i + 1} s');
+            last = state;
+          }
+          if (state == 12 || (state == 10 && i >= 3)) break;
+        }
+        if (state == 12) break;
       }
-      logBle(state == 12 ? 'Paired' : 'Pairing did not finish (state $state)');
+      logBle(
+        state == 12 ? 'Paired' : 'Pairing failed: the band did not accept it',
+      );
       return state == 12;
     } catch (e) {
       logBle('Pairing error: $e');
@@ -304,6 +315,13 @@ class BleHeartSensor implements HeartSensor {
     };
     yield* ctl.stream;
   }
+
+  static String _bondName(int? s) => switch (s) {
+    10 => 'not paired',
+    11 => 'pairing…',
+    12 => 'paired',
+    _ => '$s',
+  };
 
   static String _short(Uuid u) {
     final s = u.toString();
