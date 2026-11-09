@@ -9,6 +9,7 @@ import 'package:basivo_fit/state/settings.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:basivo_fit/ui/screens/live.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -328,5 +329,11 @@ void main() {
     expect(ZoneLimits.fallback.zoneOf(122), Zone.moderate);
     expect(ZoneLimits.fallback.zoneOf(150), Zone.vigorous);
     expect(ZoneLimits.fallback.zoneOf(90), Zone.light);
+  });
+
+  test('sharing help matches the picked device', () {
+    expect(sharingSteps('Fitbit Air'), contains('Google Health'));
+    expect(sharingSteps('Amazfit T-Rex Pro'), contains('Zepp'));
+    expect(sharingSteps('Polar H10'), contains('broadcast'));
   });
 }

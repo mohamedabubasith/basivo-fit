@@ -192,6 +192,14 @@ class LiveHeart extends ChangeNotifier {
   Future<void> _giveUp(LivePhase p) async {
     _wanted = false;
     await _disconnectStreams();
+    // Never worked: do not auto-reconnect to it next time the app opens.
+    if (!_gotData && !demoMode) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('ble.id');
+        await prefs.remove('ble.name');
+      } catch (_) {}
+    }
     _set(p);
   }
 

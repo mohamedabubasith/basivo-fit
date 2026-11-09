@@ -78,7 +78,7 @@ class LiveHeartCard extends StatelessWidget {
       LivePhase.notSharing => _Message(
         icon: LucideIcons.heartOff,
         text:
-            '${live.device?.name ?? 'This device'} is nearby but is not sharing heart rate yet.\n\n$_fitbitSteps\n\nThen tap Try again.',
+            '${live.device?.name ?? 'This device'} is nearby but is not sharing heart rate yet.\n\n${sharingSteps(live.device?.name)}\n\nThen tap Try again.',
         actions: [
           AppButton(
             label: 'Try again',
@@ -91,9 +91,11 @@ class LiveHeartCard extends StatelessWidget {
         icon: LucideIcons.bluetoothOff,
         text:
             'Could not get heart rate from ${live.device?.name ?? 'the sensor'}. Check these, then try again:\n\n'
-            '1. Heart rate sharing is on. $_fitbitSteps\n'
-            '2. You did not pair it in Android Bluetooth settings. If it shows there as "Pairing" or paired, tap it and choose Forget. Basivo Fit connects to it directly.\n'
-            '3. It is close to your phone, and no other app such as Zwift or Peloton is connected to it.',
+            '1. Heart rate sharing is on. ${sharingSteps(live.device?.name)}\n'
+            '2. You are wearing it. A band on its charger does not measure or share heart rate.\n'
+            '3. You did not pair it in Android Bluetooth settings. If it shows there as "Pairing" or paired, tap it and choose Forget. Basivo Fit connects to it directly.\n'
+            '4. It is close to your phone, and no other app such as Zwift or Peloton is connected to it.\n\n'
+            'Tap Try again to pick a different device from the list.',
         actions: [
           AppButton(
             label: 'Try again',
@@ -139,6 +141,18 @@ class LiveHeartCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// How to turn on heart rate sharing for the device the user picked.
+String sharingSteps(String? name) {
+  final n = (name ?? '').toLowerCase();
+  if (RegExp(r'fitbit|\bair\b|charge|inspire|versa|sense|pixel').hasMatch(n)) {
+    return _fitbitSteps;
+  }
+  if (RegExp(r'amazfit|t-rex|gtr|gts|bip|zepp|balance|cheetah').hasMatch(n)) {
+    return 'On an Amazfit watch: turn on Heart rate sharing (also called "Share heart rate" or "Discoverable") in the watch settings or in the Zepp app.';
+  }
+  return 'Turn on heart rate broadcast on the device (it may be called "Share heart rate" or "Broadcast heart rate").';
 }
 
 const _fitbitSteps =

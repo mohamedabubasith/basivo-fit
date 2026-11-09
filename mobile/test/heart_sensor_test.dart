@@ -177,6 +177,11 @@ void main() {
       await pumpEventQueue();
       expect(live.phase, LivePhase.notSharing);
       expect(f.connects, 1, reason: 'no endless reconnect loop');
+      expect(
+        (await SharedPreferences.getInstance()).getString('ble.id'),
+        isNull,
+        reason: 'a device that never worked is not reconnected next time',
+      );
     });
 
     test('connected but silent: gives up after 3 tries with help', () async {
