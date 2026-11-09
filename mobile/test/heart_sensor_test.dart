@@ -26,6 +26,12 @@ class FakeSensor implements HeartSensor {
   Stream<SensorDevice> scan() => Stream.fromIterable(const [
     SensorDevice(id: 'a', name: 'Far strap', rssi: -80),
     SensorDevice(id: 'b', name: 'Near strap', rssi: -40),
+    SensorDevice(
+      id: 'w',
+      name: 'Amazfit T-Rex Pro',
+      rssi: -30,
+      advertisesHr: false,
+    ),
   ]);
   @override
   Stream<LinkState> connect(String deviceId) {
@@ -91,7 +97,11 @@ void main() {
       final live = LiveHeart(real: f);
       await live.startScan();
       await pumpEventQueue();
-      expect(live.found.map((d) => d.name), ['Near strap', 'Far strap']);
+      expect(live.found.map((d) => d.name), [
+        'Near strap',
+        'Far strap',
+        'Amazfit T-Rex Pro',
+      ], reason: 'sharing devices first, then by signal');
       await live.connect(live.found.first);
       await pumpEventQueue();
       expect(live.phase, LivePhase.connecting);

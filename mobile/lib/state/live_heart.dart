@@ -134,7 +134,11 @@ class LiveHeart extends ChangeNotifier {
     _scan = sensor.scan().listen((d) {
       final i = found.indexWhere((x) => x.id == d.id);
       i < 0 ? found.add(d) : found[i] = d;
-      found.sort((a, b) => (b.rssi ?? -999).compareTo(a.rssi ?? -999));
+      // Devices that announce heart rate (sharing is on) first, then by signal.
+      found.sort((a, b) {
+        if (a.advertisesHr != b.advertisesHr) return a.advertisesHr ? -1 : 1;
+        return (b.rssi ?? -999).compareTo(a.rssi ?? -999);
+      });
       notifyListeners();
     }, onError: (_) => _set(LivePhase.idle));
     _scanStop?.cancel();
